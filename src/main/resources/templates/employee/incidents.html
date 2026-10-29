@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>My incidents · I-ITSM</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="role-employee">
+<header th:replace="~{fragments/nav :: nav('employee')}"></header>
+<main class="card">
+    <div class="heading-row">
+        <h1>My incidents</h1>
+        <a class="button primary" th:href="@{/employee/incidents/new}">Report incident</a>
+    </div>
+
+    <p class="alert ok" th:if="${message}" th:text="${message}"></p>
+
+    <p class="muted" th:if="${incidents.isEmpty()}">You haven't reported any incidents yet.</p>
+
+    <table th:unless="${incidents.isEmpty()}">
+        <thead>
+        <tr>
+            <th>ID</th><th>Title</th><th>Service</th><th>Category</th>
+            <th>Priority</th><th>Status</th><th>Reported</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="i : ${incidents}">
+            <td th:text="${i.number}">INC0001</td>
+            <td th:text="${i.title}">Title</td>
+            <td th:text="${i.service.name}">Service</td>
+            <td th:text="${i.category.name}">Category</td>
+            <td><span th:class="'pill ' + ${i.priority}" th:text="${i.priority}">P1</span></td>
+            <td th:text="${i.status}">NEW</td>
+            <td th:text="${#temporals.format(i.createdAt, 'dd MMM yyyy, HH:mm')}">date</td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>

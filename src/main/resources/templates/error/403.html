@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Not allowed · I-ITSM</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="auth">
+<!-- Spring Boot shows error/403.html automatically when access is denied -->
+<main class="card narrow">
+    <h1>Not allowed</h1>
+    <p class="alert error">Your role doesn't have access to this page.</p>
+    <p><a th:href="@{/}">Back to your home page</a></p>
+</main>
+</body>
+</html>

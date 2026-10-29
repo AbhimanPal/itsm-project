@@ -1,13 +1,13 @@
-package com.example.demo;
+package com.itsm.itsm;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class DemoApplication {
+public class ItsmApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(DemoApplication.class, args);
+		SpringApplication.run(ItsmApplication.class, args);
 	}
 
 }

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Technician · I-ITSM</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="role-technician">
+<header th:replace="~{fragments/nav :: nav('technician')}"></header>
+<main class="card">
+    <h1>My assigned incidents</h1>
+    <p class="muted">Coming next: assigned incidents, acknowledge, notes and resolve.</p>
+</main>
+</body>
+</html>

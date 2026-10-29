@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Something went wrong · I-ITSM</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="auth">
+<main class="card narrow">
+    <h1>Something went wrong</h1>
+    <p class="alert error" th:text="${message}">Message</p>
+    <p><a th:href="@{/}">Back to home</a></p>
+</main>
+</body>
+</html>

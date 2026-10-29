@@ -1,0 +1,47 @@
+/* Each role gets its own accent colour, so the three UIs look different */
+:root { --accent: #2563eb; --bg: #f4f6fa; --text: #1f2937; --muted: #6b7280; --border: #dfe3ea; }
+body.role-employee   { --accent: #2563eb; }
+body.role-technician { --accent: #0f766e; }
+body.role-admin      { --accent: #7c3aed; }
+
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
+a { color: var(--accent); }
+
+.topbar { display: flex; align-items: center; gap: 16px; padding: 12px 24px; background: var(--accent); color: #fff; }
+.topbar .brand { font-weight: 700; font-size: 18px; }
+.topbar .role-badge { background: rgba(255,255,255,.2); padding: 2px 10px; border-radius: 999px; font-size: 12px; text-transform: uppercase; }
+.topbar nav { display: flex; gap: 16px; flex: 1; }
+.topbar nav a { color: #fff; text-decoration: none; }
+.topbar nav a:hover { text-decoration: underline; }
+.topbar .logout button { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.6); padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+
+.card { background: #fff; max-width: 1000px; margin: 24px auto; padding: 24px; border-radius: 10px; border: 1px solid var(--border); }
+.card.narrow { max-width: 420px; margin-top: 10vh; }
+.heading-row { display: flex; justify-content: space-between; align-items: center; }
+h1 { margin-top: 0; font-size: 22px; }
+.muted { color: var(--muted); }
+
+form label { display: block; margin: 12px 0 4px; font-weight: 500; flex: 1; }
+input, select, textarea { display: block; width: 100%; margin-top: 4px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font: inherit; }
+.row { display: flex; gap: 16px; }
+button, .button { display: inline-block; padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border); background: #fff; font: inherit; cursor: pointer; text-decoration: none; }
+.primary { background: var(--accent); color: #fff; border-color: var(--accent); margin-top: 16px; }
+.field-error { color: #b91c1c; font-size: 13px; margin: 2px 0; }
+.field-error:empty { display: none; }
+
+.alert { padding: 10px 12px; border-radius: 6px; }
+.alert.ok { background: #ecfdf5; color: #065f46; }
+.alert.error { background: #fef2f2; color: #991b1b; }
+
+table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); font-size: 14px; }
+th { color: var(--muted); font-weight: 600; }
+
+.pill { padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.pill.P1 { background: #fee2e2; color: #991b1b; }
+.pill.P2 { background: #ffedd5; color: #9a3412; }
+.pill.P3 { background: #fef9c3; color: #854d0e; }
+.pill.P4 { background: #e0f2fe; color: #075985; }
+
+@media (max-width: 640px) { .row { flex-direction: column; gap: 0; } .topbar { flex-wrap: wrap; } }

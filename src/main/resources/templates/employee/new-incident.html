@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Report incident · I-ITSM</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="role-employee">
+<header th:replace="~{fragments/nav :: nav('employee')}"></header>
+<main class="card">
+    <h1>Report an incident</h1>
+    <form th:action="@{/employee/incidents}" th:object="${form}" method="post">
+        <label>Title <input th:field="*{title}" placeholder="e.g. Payment app shows error 500"></label>
+        <p class="field-error" th:errors="*{title}"></p>
+
+        <label>Description
+            <textarea th:field="*{description}" rows="5" placeholder="What happened? When did it start?"></textarea>
+        </label>
+        <p class="field-error" th:errors="*{description}"></p>
+
+        <div class="row">
+            <label>Affected service
+                <select th:field="*{serviceId}">
+                    <option value="">Choose…</option>
+                    <option th:each="s : ${services}" th:value="${s.id}" th:text="${s.name}">Service</option>
+                </select>
+            </label>
+            <label>Category
+                <select th:field="*{categoryId}">
+                    <option value="">Choose…</option>
+                    <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}">Category</option>
+                </select>
+            </label>
+        </div>
+        <p class="field-error" th:errors="*{serviceId}"></p>
+        <p class="field-error" th:errors="*{categoryId}"></p>
+
+        <div class="row">
+            <label>Impact
+                <select th:field="*{impact}">
+                    <option value="1">1 – Only me</option>
+                    <option value="2">2 – My team</option>
+                    <option value="3">3 – Whole organization</option>
+                </select>
+            </label>
+            <label>Urgency
+                <select th:field="*{urgency}">
+                    <option value="1">1 – Can wait</option>
+                    <option value="2">2 – Soon</option>
+                    <option value="3">3 – Work has stopped</option>
+                </select>
+            </label>
+            <label>Users affected <input type="number" min="1" th:field="*{usersAffected}"></label>
+        </div>
+        <p class="field-error" th:errors="*{usersAffected}"></p>
+
+        <button type="submit" class="primary">Submit</button>
+    </form>
+</main>
+</body>
+</html>

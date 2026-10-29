@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Register · I-ITSM</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="auth">
+<main class="card narrow">
+    <h1>Create an employee account</h1>
+    <form th:action="@{/register}" th:object="${form}" method="post">
+        <label>Name <input th:field="*{name}"></label>
+        <p class="field-error" th:errors="*{name}"></p>
+
+        <label>Email <input type="email" th:field="*{email}"></label>
+        <p class="field-error" th:errors="*{email}"></p>
+
+        <label>Department <input th:field="*{department}"></label>
+        <p class="field-error" th:errors="*{department}"></p>
+
+        <label>Password <input type="password" th:field="*{password}"></label>
+        <p class="field-error" th:errors="*{password}"></p>
+
+        <button type="submit" class="primary">Register</button>
+    </form>
+    <p class="muted">Already registered? <a th:href="@{/login}">Log in</a></p>
+</main>
+</body>
+</html>

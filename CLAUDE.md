@@ -16,6 +16,7 @@ The full problem statement is in `docs/OOP_S1_2026-2027_Project.pdf` — read it
   - We must be able to explain every line in our demo video, so never add code we haven't had explained.
   - Tell us how to run and check each change. We run the app from IntelliJ (green ▶ on `ItsmApplication`, red ■ to stop) and open http://localhost:8080 in the browser.
   - We use Spring Boot **4.1**. Most tutorials online are for 3.x, so check the version when copied code doesn't work.
+- **Way of working since 29 Oct:** Person A builds the whole app with Claude Code, and Claude writes the code to finish fast. Build one working slice at a time, test it in the browser, and explain each new file afterwards. Person A must still understand each file well enough to explain it on video.
 
 ## What we're building
 
@@ -177,13 +178,17 @@ Write the report as we go, not only in the final week.
 | Database | H2 in file mode (`jdbc:h2:file:./data/itsm`). No MySQL switch |
 | IDE | IntelliJ IDEA, with the free JetBrains student licence |
 | Repo | GitHub repo `itsm-project`, **private** until submission, then make it public or add the IC as collaborator |
-| Base package | `com.itsm.itsm`. Domain classes go in `com.itsm.itsm.model`. The code is still in `com.example.demo` / `DemoApplication` and must be renamed (IntelliJ → Refactor → Rename) |
-| Spring dependencies | Spring Web, Thymeleaf, Spring Data JPA, H2. **Agreed to add:** Spring Security, Validation; later Mail (for the email channel) |
+| Base package | `com.itsm.itsm`, main class `ItsmApplication`. Sub-packages: `model`, `exception`, `priority`, `repository`, `service`, `security`, `web`, `config` |
+| Spring dependencies | Spring Web, Thymeleaf, Spring Data JPA, H2, Security, Validation. **Agreed to add later:** Mail (for the email channel) |
+| Java version | Build with Java 21 (the Mac also has Java 26 as its default). In IntelliJ: File → Project Structure → SDK = 21 |
+| Test data | `config/DataSeeder.java` fills an empty database with categories, services and test accounts (listed in its comment). Delete the `data/` folder to start fresh. Tests use a separate in-memory DB (`src/test/resources/application.properties`) |
 | Priority formula (v2) | score = impact × urgency × service criticality, each 1–3 (range 1–27). Criticality comes from the `ITService` the admin set up, not from the employee. ≥18 → P1, ≥9 → P2, ≥4 → P3, else P4. Then, if users affected ≥ 100, raise one level (never above P1). Implemented as a `PriorityStrategy` interface |
-| Entities | Person A writes plain Java classes first. Both of us add the JPA annotations (`@Entity` etc.) together in one sitting |
+| Entities | Domain classes are JPA entities directly. `User` uses single-table inheritance (one `users` table with a `user_type` column) |
 | Build style | End-to-end slices, not layers. First slice: employee logs in → reports an incident → it's saved → it appears in their list |
 
 ## Work split
+
+**Since 29 Oct, Person A is building everything** (see "Way of working"). The split below is kept as the list of modules. Person B must still appear in the video and explain some modules, and the report must show what each member did. Agree with Person B which modules they will present.
 
 **Person A (Udiptya), "the brain": domain model and business logic.**
 
@@ -234,14 +239,15 @@ Re-planned on 29 Oct, because the Oct 22–28 goals slipped.
 - [x] Spring Boot project generated, runs on localhost:8080
 - [x] `HomeController` + `templates/home.html` ("I-ITSM is running!") pushed to GitHub
 - [x] Plan reviewed against the full PDF (29 Oct). Gaps and decisions are recorded above
-- [ ] Housekeeping: rename `com.example.demo` → `com.itsm.itsm` and `DemoApplication` → `ItsmApplication`; add `.DS_Store` to `.gitignore`; commit `CLAUDE.md` and `docs/`
-- [ ] Switch H2 to file mode
+- [x] Housekeeping: package renamed to `com.itsm.itsm` / `ItsmApplication`, `.DS_Store` and `data/` ignored, H2 in file mode
+- [x] **Slice 1 (29 Oct):** domain model (`User` hierarchy, `Incident`, `Category`, `ITService`, `Priority`, `IncidentStatus` lifecycle), base + 3 custom exceptions, `PriorityStrategy` (v2 formula), login with 3 roles + BCrypt, employee register, report-incident form with validation, "My incidents" list, friendly error and 403 pages, seed data. 15 tests pass (8 priority, 6 lifecycle, 1 app start)
 - [ ] Person B: install tools, clone the repo (IntelliJ → Get from VCS), run it
-- [ ] Person B: confirm the updated work split (notifications + audit moved to B)
-- [ ] Person A, task 1: `User` hierarchy, `ITService`, `Category`, `Priority`, plus a Demo `main()` that prints one of each. Person A writes `Technician` and `Admin` themselves; Claude reviews only
-- [ ] Person A, task 2: `IncidentStatus` with allowed transitions, `Incident` with `changeStatus()`, `ItsmException` + `InvalidStateTransitionException`. The Demo shows a legal path and a caught NEW → CLOSED
-- [ ] Person A, task 3: `PriorityStrategy` + `ScoreBasedPriorityStrategy`, plus 5 JUnit boundary tests (3/4, 8/9, 12/18, bump capped at P1, invalid input)
-- [ ] Person B: login with 3 roles (Spring Security), then the "Report Incident" Thymeleaf form
+- [ ] Person B: agree which modules they will present in the video
+- [ ] **Slice 2:** SLA policies + deadlines on each incident, 2 assignment strategies (skill-based, load-based) switchable by admin, technician screens (assigned list, acknowledge, start, notes, ask for info, resolve)
+- [ ] **Slice 3:** Observer: audit trail + in-app notifications on every status change; employee incident detail page (reply to questions, verify/reject resolution, feedback)
+- [ ] **Slice 4:** admin screens (users, technicians, services, categories, SLA policies, strategy switch), all-incidents search with 5+ filters, dashboards
+- [ ] **Slice 5:** SLA scheduler (warnings, violations), auto-escalation, duplicate detection, email channel (Adapter)
+- [ ] **Slice 6:** charts dashboard (innovation), more tests up to 15+ documented cases, bug fixes
 
 ## Git routine
 
