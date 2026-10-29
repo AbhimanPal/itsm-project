@@ -9,7 +9,33 @@
 <header th:replace="~{fragments/nav :: nav('admin')}"></header>
 <main class="card">
     <h1>Admin dashboard</h1>
-    <p class="muted">Coming next: all incidents, users, services, SLA policies and reports.</p>
+    <p class="alert ok" th:if="${message}" th:text="${message}"></p>
+
+    <h2>Technician assignment strategy</h2>
+    <p class="muted">Used for every new incident. Changing it needs no code change or restart.</p>
+    <form th:action="@{/admin/assignment-strategy}" method="post">
+        <label class="radio" th:each="s : ${strategies}">
+            <input type="radio" name="strategy" th:value="${s.key}" th:checked="${s.key == activeStrategy}">
+            <span th:text="${s.displayName}">Skill-based</span>
+        </label>
+        <button class="primary" type="submit">Save strategy</button>
+    </form>
+
+    <h2>SLA policies</h2>
+    <table>
+        <thead>
+        <tr><th>Service</th><th>Priority</th><th>Respond within</th><th>Resolve within</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="p : ${slaPolicies}">
+            <td th:text="${p.service != null} ? ${p.service.name} : 'All services (default)'">Service</td>
+            <td><span th:class="'pill ' + ${p.priority}" th:text="${p.priority}">P1</span></td>
+            <td th:text="${p.responseMinutes} + ' min'">5 min</td>
+            <td th:text="${p.resolutionMinutes} + ' min'">30 min</td>
+        </tr>
+        </tbody>
+    </table>
+    <p class="muted">Coming next: manage users, technicians, services, categories and SLA policies; all incidents; reports.</p>
 </main>
 </body>
 </html>

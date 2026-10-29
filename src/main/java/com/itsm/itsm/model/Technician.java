@@ -40,7 +40,7 @@ public class Technician extends User {
 
     public boolean hasSkill(Category category) {
         for (Category skill : skills) {
-            if (skill.getId().equals(category.getId())) {
+            if (skill.getName().equals(category.getName())) {
                 return true;
             }
         }

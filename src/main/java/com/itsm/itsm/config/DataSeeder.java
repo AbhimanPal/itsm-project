@@ -3,6 +3,7 @@ package com.itsm.itsm.config;
 import com.itsm.itsm.model.*;
 import com.itsm.itsm.repository.CategoryRepository;
 import com.itsm.itsm.repository.ITServiceRepository;
+import com.itsm.itsm.repository.SlaPolicyRepository;
 import com.itsm.itsm.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,21 +25,43 @@ public class DataSeeder implements CommandLineRunner {
     private final CategoryRepository categoryRepository;
     private final ITServiceRepository serviceRepository;
     private final UserRepository userRepository;
+    private final SlaPolicyRepository slaPolicyRepository;
     private final PasswordEncoder passwordEncoder;
 
     public DataSeeder(CategoryRepository categoryRepository, ITServiceRepository serviceRepository,
-                      UserRepository userRepository, PasswordEncoder passwordEncoder) {
+                      UserRepository userRepository, SlaPolicyRepository slaPolicyRepository,
+                      PasswordEncoder passwordEncoder) {
         this.categoryRepository = categoryRepository;
         this.serviceRepository = serviceRepository;
         this.userRepository = userRepository;
+        this.slaPolicyRepository = slaPolicyRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
+    // Each part is only added if its table is still empty
     @Override
     public void run(String... args) {
-        if (categoryRepository.count() > 0) {
-            return; // already seeded
+        if (categoryRepository.count() == 0) {
+            seedServicesCategoriesAndUsers();
         }
+        if (slaPolicyRepository.count() == 0) {
+            seedSlaPolicies();
+        }
+    }
+
+    private void seedSlaPolicies() {
+        // Defaults for every service (service = null), from the PDF's table
+        slaPolicyRepository.save(new SlaPolicy(null, Priority.P1, 5, 30));
+        slaPolicyRepository.save(new SlaPolicy(null, Priority.P2, 15, 120));
+        slaPolicyRepository.save(new SlaPolicy(null, Priority.P3, 60, 480));
+        slaPolicyRepository.save(new SlaPolicy(null, Priority.P4, 240, 1440));
+
+        // Payments are business-critical, so a P2 there gets a stricter deadline
+        serviceRepository.findByName("Payment Application").ifPresent(payment ->
+                slaPolicyRepository.save(new SlaPolicy(payment, Priority.P2, 10, 60)));
+    }
+
+    private void seedServicesCategoriesAndUsers() {
 
         Map<String, Category> categories = new HashMap<>();
         addCategory(categories, "Hardware", "laptop,monitor,keyboard,mouse,printer,screen");

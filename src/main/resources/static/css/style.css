@@ -45,3 +45,23 @@ th { color: var(--muted); font-weight: 600; }
 .pill.P4 { background: #e0f2fe; color: #075985; }
 
 @media (max-width: 640px) { .row { flex-direction: column; gap: 0; } .topbar { flex-wrap: wrap; } }
+
+h2 { font-size: 16px; margin-top: 28px; }
+.pre { white-space: pre-wrap; }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 16px 0; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; }
+.actions { display: flex; gap: 8px; }
+.actions .primary { margin-top: 0; }
+.notes { list-style: none; padding: 0; }
+.notes li { border-left: 3px solid var(--border); padding: 4px 12px; margin-bottom: 12px; }
+.notes li p { margin: 4px 0 0; }
+label.radio { display: flex; gap: 8px; align-items: center; font-weight: 400; }
+label.radio input { width: auto; margin: 0; }
+
+.sla { padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.sla.ON_TRACK { background: #ecfdf5; color: #065f46; }
+.sla.AT_RISK  { background: #fef9c3; color: #854d0e; }
+.sla.BREACHED { background: #fee2e2; color: #991b1b; }
+.sla.MET      { background: #e0f2fe; color: #075985; }
+.sla.NO_SLA   { background: #f3f4f6; color: var(--muted); }

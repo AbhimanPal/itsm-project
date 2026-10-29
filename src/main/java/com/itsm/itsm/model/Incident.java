@@ -3,7 +3,11 @@ package com.itsm.itsm.model;
 import com.itsm.itsm.exception.InvalidStateTransitionException;
 import jakarta.persistence.*;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Entity
 public class Incident {
@@ -52,6 +56,19 @@ public class Incident {
 
     private LocalDateTime closedAt;
 
+    // SLA deadlines, set once from the matching SlaPolicy
+    private LocalDateTime responseDueAt;
+    private LocalDateTime resolutionDueAt;
+
+    // When the technician actually responded and resolved
+    private LocalDateTime acknowledgedAt;
+    private LocalDateTime resolvedAt;
+
+    // Composition: the incident owns its notes. cascade = save/delete them with the incident.
+    @OneToMany(mappedBy = "incident", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("createdAt ASC")
+    private List<IncidentNote> notes = new ArrayList<>();
+
     protected Incident() {
     }
 
@@ -74,9 +91,58 @@ public class Incident {
             throw new InvalidStateTransitionException(status, next);
         }
         status = next;
-        if (next == IncidentStatus.CLOSED) {
+        if (next == IncidentStatus.ACKNOWLEDGED) {
+            acknowledgedAt = LocalDateTime.now();
+        } else if (next == IncidentStatus.RESOLVED) {
+            resolvedAt = LocalDateTime.now();
+        } else if (next == IncidentStatus.CLOSED) {
             closedAt = LocalDateTime.now();
         }
+    }
+
+    public void applySla(SlaPolicy policy) {
+        responseDueAt = createdAt.plusMinutes(policy.getResponseMinutes());
+        resolutionDueAt = createdAt.plusMinutes(policy.getResolutionMinutes());
+    }
+
+    public void assignTo(Technician technician) {
+        changeStatus(IncidentStatus.ASSIGNED);
+        assignedTechnician = technician;
+    }
+
+    public void resolve(String resolutionText) {
+        changeStatus(IncidentStatus.RESOLVED);
+        resolution = resolutionText;
+    }
+
+    public void addNote(User author, NoteType type, String text) {
+        notes.add(new IncidentNote(this, author, type, text));
+    }
+
+    public SlaStatus getSlaStatus() {
+        return getSlaStatus(LocalDateTime.now());
+    }
+
+    // "now" is a parameter so tests can pretend it is a different time
+    public SlaStatus getSlaStatus(LocalDateTime now) {
+        if (resolutionDueAt == null) {
+            return SlaStatus.NO_SLA;
+        }
+        if (acknowledgedAt != null && acknowledgedAt.isAfter(responseDueAt)) {
+            return SlaStatus.BREACHED; // responded too late
+        }
+        if (resolvedAt != null) {
+            return resolvedAt.isAfter(resolutionDueAt) ? SlaStatus.BREACHED : SlaStatus.MET;
+        }
+        if (now.isAfter(resolutionDueAt) || (acknowledgedAt == null && now.isAfter(responseDueAt))) {
+            return SlaStatus.BREACHED;
+        }
+        long totalSeconds = Duration.between(createdAt, resolutionDueAt).toSeconds();
+        long usedSeconds = Duration.between(createdAt, now).toSeconds();
+        if (usedSeconds * 100 >= totalSeconds * 80) {
+            return SlaStatus.AT_RISK; // 80% of the time is used up
+        }
+        return SlaStatus.ON_TRACK;
     }
 
     // Shown to users as INC0001, INC0002, ...
@@ -146,5 +212,26 @@ public class Incident {
 
     public LocalDateTime getClosedAt() {
         return closedAt;
+    }
+
+    public LocalDateTime getResponseDueAt() {
+        return responseDueAt;
+    }
+
+    public LocalDateTime getResolutionDueAt() {
+        return resolutionDueAt;
+    }
+
+    public LocalDateTime getAcknowledgedAt() {
+        return acknowledgedAt;
+    }
+
+    public LocalDateTime getResolvedAt() {
+        return resolvedAt;
+    }
+
+    // Read-only view, so nobody can add notes without going through addNote()
+    public List<IncidentNote> getNotes() {
+        return Collections.unmodifiableList(notes);
     }
 }

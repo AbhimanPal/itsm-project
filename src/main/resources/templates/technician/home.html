@@ -2,14 +2,40 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Technician · I-ITSM</title>
+    <title>My work · I-ITSM</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body class="role-technician">
 <header th:replace="~{fragments/nav :: nav('technician')}"></header>
 <main class="card">
-    <h1>My assigned incidents</h1>
-    <p class="muted">Coming next: assigned incidents, acknowledge, notes and resolve.</p>
+    <h1 th:text="'Hello, ' + ${technician.name}">Hello</h1>
+    <p>
+        Workload: <strong th:text="${workload} + ' / ' + ${technician.maxActiveIncidents}">2 / 5</strong> active incidents
+        <span class="muted" th:if="${technician.teamLead}">· Team lead</span>
+    </p>
+    <p class="muted">Skills: <span th:each="s, it : ${technician.skills}" th:text="${s.name} + ${it.last ? '' : ', '}">Network</span></p>
+
+    <p class="muted" th:if="${incidents.isEmpty()}">No incidents are assigned to you.</p>
+
+    <table th:unless="${incidents.isEmpty()}">
+        <thead>
+        <tr>
+            <th>ID</th><th>Title</th><th>Service</th><th>Priority</th>
+            <th>Status</th><th>SLA</th><th>Resolve by</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="i : ${incidents}">
+            <td><a th:href="@{/technician/incidents/{id}(id=${i.id})}" th:text="${i.number}">INC0001</a></td>
+            <td th:text="${i.title}">Title</td>
+            <td th:text="${i.service.name}">Service</td>
+            <td><span th:class="'pill ' + ${i.priority}" th:text="${i.priority}">P1</span></td>
+            <td th:text="${i.status}">ASSIGNED</td>
+            <td><span th:class="'sla ' + ${i.slaStatus}" th:text="${i.slaStatus.label}">On track</span></td>
+            <td th:text="${i.resolutionDueAt != null} ? ${#temporals.format(i.resolutionDueAt, 'dd MMM, HH:mm')} : '—'">time</td>
+        </tr>
+        </tbody>
+    </table>
 </main>
 </body>
 </html>

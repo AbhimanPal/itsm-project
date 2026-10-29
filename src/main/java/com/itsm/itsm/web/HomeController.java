@@ -26,15 +26,4 @@ public class HomeController {
             case ADMIN -> "redirect:/admin";
         };
     }
-
-    // Placeholder pages until the technician and admin screens are built
-    @GetMapping("/technician")
-    public String technicianHome() {
-        return "technician/home";
-    }
-
-    @GetMapping("/admin")
-    public String adminHome() {
-        return "admin/home";
-    }
 }

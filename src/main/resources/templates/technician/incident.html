@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${incident.number} + ' · I-ITSM'">Incident · I-ITSM</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="role-technician">
+<header th:replace="~{fragments/nav :: nav('technician')}"></header>
+<main class="card" th:with="st=${incident.status.name()}">
+    <p><a th:href="@{/technician}">← Back to my work</a></p>
+    <h1 th:text="${incident.number} + ' · ' + ${incident.title}">INC0001 · Title</h1>
+
+    <p class="alert ok" th:if="${message}" th:text="${message}"></p>
+
+    <dl class="facts">
+        <dt>Status</dt><dd th:text="${incident.status}">ASSIGNED</dd>
+        <dt>Priority</dt><dd><span th:class="'pill ' + ${incident.priority}" th:text="${incident.priority} + ' ' + ${incident.priority.label}">P1</span></dd>
+        <dt>SLA</dt><dd><span th:class="'sla ' + ${incident.slaStatus}" th:text="${incident.slaStatus.label}">On track</span></dd>
+        <dt>Respond by</dt><dd th:text="${incident.responseDueAt != null} ? ${#temporals.format(incident.responseDueAt, 'dd MMM, HH:mm')} : '—'">time</dd>
+        <dt>Resolve by</dt><dd th:text="${incident.resolutionDueAt != null} ? ${#temporals.format(incident.resolutionDueAt, 'dd MMM, HH:mm')} : '—'">time</dd>
+        <dt>Reporter</dt><dd th:text="${incident.reporter.name} + ' (' + ${incident.reporter.department} + ')'">Asha</dd>
+        <dt>Service</dt><dd th:text="${incident.service.name}">Service</dd>
+        <dt>Category</dt><dd th:text="${incident.category.name}">Category</dd>
+        <dt>Impact / urgency / users</dt><dd th:text="${incident.impact} + ' / ' + ${incident.urgency} + ' / ' + ${incident.usersAffected}">3 / 3 / 10</dd>
+    </dl>
+
+    <h2>Description</h2>
+    <p class="pre" th:text="${incident.description}">Description</p>
+
+    <th:block th:if="${incident.resolution != null}">
+        <h2>Resolution</h2>
+        <p class="pre" th:text="${incident.resolution}">Resolution</p>
+    </th:block>
+
+    <h2>Actions</h2>
+    <div class="actions">
+        <form th:if="${st == 'ASSIGNED'}" th:action="@{/technician/incidents/{id}/acknowledge(id=${incident.id})}" method="post">
+            <button class="primary" type="submit">Acknowledge</button>
+        </form>
+        <form th:if="${st == 'ACKNOWLEDGED'}" th:action="@{/technician/incidents/{id}/start(id=${incident.id})}" method="post">
+            <button class="primary" type="submit">Start work</button>
+        </form>
+        <form th:if="${st == 'AWAITING_INFO'}" th:action="@{/technician/incidents/{id}/resume(id=${incident.id})}" method="post">
+            <button class="primary" type="submit">Resume work</button>
+        </form>
+    </div>
+    <p class="muted" th:if="${st == 'AWAITING_INFO'}">Waiting for the reporter to answer your question.</p>
+
+    <th:block th:if="${st == 'IN_PROGRESS'}">
+        <form th:action="@{/technician/incidents/{id}/ask(id=${incident.id})}" method="post">
+            <label>Ask the reporter for more information
+                <textarea name="question" rows="2" required></textarea>
+            </label>
+            <button type="submit">Send question</button>
+        </form>
+        <form th:action="@{/technician/incidents/{id}/resolve(id=${incident.id})}" method="post">
+            <label>Resolution (what was wrong and how you fixed it)
+                <textarea name="resolution" rows="3" required></textarea>
+            </label>
+            <button class="primary" type="submit">Resolve incident</button>
+        </form>
+    </th:block>
+
+    <h2>Notes</h2>
+    <p class="muted" th:if="${incident.notes.isEmpty()}">No notes yet.</p>
+    <ul class="notes">
+        <li th:each="n : ${incident.notes}">
+            <span class="muted" th:text="${#temporals.format(n.createdAt, 'dd MMM, HH:mm')} + ' · ' + ${n.author.name} + ' · ' + ${n.type.label}">time · who · type</span>
+            <p class="pre" th:text="${n.text}">text</p>
+        </li>
+    </ul>
+    <form th:if="${incident.status.open}" th:action="@{/technician/incidents/{id}/note(id=${incident.id})}" method="post">
+        <label>Add an investigation note
+            <textarea name="text" rows="2" required></textarea>
+        </label>
+        <button type="submit">Add note</button>
+    </form>
+</main>
+</body>
+</html>

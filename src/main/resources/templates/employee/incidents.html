@@ -21,7 +21,7 @@
         <thead>
         <tr>
             <th>ID</th><th>Title</th><th>Service</th><th>Category</th>
-            <th>Priority</th><th>Status</th><th>Reported</th>
+            <th>Priority</th><th>Status</th><th>Technician</th><th>Resolve by</th><th>Reported</th>
         </tr>
         </thead>
         <tbody>
@@ -32,6 +32,8 @@
             <td th:text="${i.category.name}">Category</td>
             <td><span th:class="'pill ' + ${i.priority}" th:text="${i.priority}">P1</span></td>
             <td th:text="${i.status}">NEW</td>
+            <td th:text="${i.assignedTechnician != null} ? ${i.assignedTechnician.name} : 'Not yet assigned'">Tech</td>
+            <td th:text="${i.resolutionDueAt != null} ? ${#temporals.format(i.resolutionDueAt, 'dd MMM, HH:mm')} : '—'">time</td>
             <td th:text="${#temporals.format(i.createdAt, 'dd MMM yyyy, HH:mm')}">date</td>
         </tr>
         </tbody>

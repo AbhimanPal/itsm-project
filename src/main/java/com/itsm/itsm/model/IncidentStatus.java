@@ -1,5 +1,7 @@
 package com.itsm.itsm.model;
 
+import java.util.List;
+
 // The incident lifecycle. Each status knows which statuses may come next,
 // so illegal jumps like NEW -> CLOSED can be blocked in one place.
 public enum IncidentStatus {
@@ -12,6 +14,9 @@ public enum IncidentStatus {
     RESOLVED,
     VERIFIED,
     CLOSED;
+
+    // Statuses where a technician is actively responsible. Used to count workload.
+    public static final List<IncidentStatus> WORKING = List.of(ASSIGNED, ACKNOWLEDGED, IN_PROGRESS, AWAITING_INFO);
 
     public boolean canMoveTo(IncidentStatus next) {
         return switch (this) {
