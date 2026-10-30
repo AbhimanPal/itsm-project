@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Audit log · I-ITSM</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="role-admin">
+<header th:replace="~{fragments/nav :: nav('admin')}"></header>
+<main class="card wide">
+    <h1>Audit log</h1>
+    <p class="muted">Every action on every incident, newest first.</p>
+    <p class="muted" th:if="${records.isEmpty()}">Nothing has happened yet.</p>
+    <table th:unless="${records.isEmpty()}">
+        <thead>
+        <tr><th>Time</th><th>Incident</th><th>Who</th><th>Action</th><th>Status</th><th>Details</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="r : ${records}">
+            <td th:text="${#temporals.format(r.timestamp, 'dd MMM, HH:mm:ss')}">time</td>
+            <td th:text="${r.incident.number}">INC0001</td>
+            <td th:text="${r.actor}">who</td>
+            <td th:text="${r.action}">action</td>
+            <td th:text="${r.oldStatus == null ? '' : r.oldStatus + ' → '} + ${r.newStatus}">NEW → CLASSIFIED</td>
+            <td th:text="${r.description}">details</td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>

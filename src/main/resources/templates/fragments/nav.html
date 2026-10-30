@@ -15,7 +15,10 @@
         </th:block>
         <th:block th:if="${role == 'admin'}">
             <a th:href="@{/admin}">Dashboard</a>
+            <a th:href="@{/admin/audit}">Audit log</a>
         </th:block>
+        <a th:href="@{/notifications}">Notifications
+            <span class="count" th:if="${unreadCount > 0}" th:text="${unreadCount}">2</span></a>
     </nav>
     <form th:action="@{/logout}" method="post" class="logout">
         <button type="submit">Log out</button>

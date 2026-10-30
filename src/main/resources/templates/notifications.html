@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Notifications · I-ITSM</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body th:class="'role-' + ${role}">
+<header th:replace="~{fragments/nav :: nav(${role})}"></header>
+<main class="card">
+    <h1>Notifications</h1>
+    <p class="muted" th:if="${notifications.isEmpty()}">You have no notifications.</p>
+    <ul class="notes">
+        <li th:each="n : ${notifications}" th:classappend="${newIds.contains(n.id)} ? 'new'">
+            <span class="muted" th:text="${#temporals.format(n.createdAt, 'dd MMM, HH:mm')}">time</span>
+            <span class="pill new-pill" th:if="${newIds.contains(n.id)}">New</span>
+            <p th:text="${n.message}">message</p>
+        </li>
+    </ul>
+</main>
+</body>
+</html>

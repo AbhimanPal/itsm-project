@@ -65,3 +65,10 @@ label.radio input { width: auto; margin: 0; }
 .sla.BREACHED { background: #fee2e2; color: #991b1b; }
 .sla.MET      { background: #e0f2fe; color: #075985; }
 .sla.NO_SLA   { background: #f3f4f6; color: var(--muted); }
+
+.card.wide { max-width: 1200px; }
+.alert.warn { background: #fffbeb; color: #92400e; }
+.topbar nav .count { background: #fff; color: var(--accent); border-radius: 999px; padding: 0 7px; font-size: 12px; font-weight: 700; margin-left: 4px; }
+.notes li.new { border-left-color: var(--accent); }
+.new-pill { background: var(--accent); color: #fff; margin-left: 6px; }
+.row form { flex: 1; }

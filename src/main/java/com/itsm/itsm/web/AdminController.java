@@ -1,6 +1,7 @@
 package com.itsm.itsm.web;
 
 import com.itsm.itsm.assignment.AssignmentService;
+import com.itsm.itsm.audit.AuditRecordRepository;
 import com.itsm.itsm.service.SlaService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,10 +17,13 @@ public class AdminController {
 
     private final AssignmentService assignmentService;
     private final SlaService slaService;
+    private final AuditRecordRepository auditRecordRepository;
 
-    public AdminController(AssignmentService assignmentService, SlaService slaService) {
+    public AdminController(AssignmentService assignmentService, SlaService slaService,
+                           AuditRecordRepository auditRecordRepository) {
         this.assignmentService = assignmentService;
         this.slaService = slaService;
+        this.auditRecordRepository = auditRecordRepository;
     }
 
     @GetMapping
@@ -28,6 +32,12 @@ public class AdminController {
         model.addAttribute("activeStrategy", assignmentService.getActiveStrategy().getKey());
         model.addAttribute("slaPolicies", slaService.findAll());
         return "admin/home";
+    }
+
+    @GetMapping("/audit")
+    public String auditLog(Model model) {
+        model.addAttribute("records", auditRecordRepository.findAllByOrderByTimestampDescIdDesc());
+        return "admin/audit";
     }
 
     @PostMapping("/assignment-strategy")

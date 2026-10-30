@@ -1,5 +1,6 @@
 package com.itsm.itsm.web;
 
+import com.itsm.itsm.audit.AuditRecordRepository;
 import com.itsm.itsm.model.Employee;
 import com.itsm.itsm.model.Incident;
 import com.itsm.itsm.repository.CategoryRepository;
@@ -10,10 +11,7 @@ import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.Principal;
@@ -26,13 +24,16 @@ public class EmployeeController {
     private final EmployeeRepository employeeRepository;
     private final CategoryRepository categoryRepository;
     private final ITServiceRepository serviceRepository;
+    private final AuditRecordRepository auditRecordRepository;
 
     public EmployeeController(IncidentService incidentService, EmployeeRepository employeeRepository,
-                              CategoryRepository categoryRepository, ITServiceRepository serviceRepository) {
+                              CategoryRepository categoryRepository, ITServiceRepository serviceRepository,
+                              AuditRecordRepository auditRecordRepository) {
         this.incidentService = incidentService;
         this.employeeRepository = employeeRepository;
         this.categoryRepository = categoryRepository;
         this.serviceRepository = serviceRepository;
+        this.auditRecordRepository = auditRecordRepository;
     }
 
     @GetMapping("/incidents")
@@ -62,6 +63,41 @@ public class EmployeeController {
         redirect.addFlashAttribute("message", incident.getNumber() + " was reported with priority "
                 + incident.getPriority() + " (" + incident.getPriority().getLabel() + ").");
         return "redirect:/employee/incidents";
+    }
+
+    @GetMapping("/incidents/{id}")
+    public String incident(@PathVariable Long id, Principal principal, Model model) {
+        Incident incident = incidentService.getForReporter(id, currentEmployee(principal));
+        model.addAttribute("incident", incident);
+        model.addAttribute("history", auditRecordRepository.findByIncidentOrderByTimestampAscIdAsc(incident));
+        return "employee/incident";
+    }
+
+    @PostMapping("/incidents/{id}/reply")
+    public String reply(@PathVariable Long id, @RequestParam String text, Principal principal,
+                        RedirectAttributes redirect) {
+        incidentService.reply(id, currentEmployee(principal), text);
+        return back(id, redirect, "Reply sent to the technician.");
+    }
+
+    @PostMapping("/incidents/{id}/confirm")
+    public String confirm(@PathVariable Long id, @RequestParam int rating,
+                          @RequestParam(required = false) String comment, Principal principal,
+                          RedirectAttributes redirect) {
+        incidentService.confirmFix(id, currentEmployee(principal), rating, comment);
+        return back(id, redirect, "Thanks! The incident is closed.");
+    }
+
+    @PostMapping("/incidents/{id}/reopen")
+    public String reopen(@PathVariable Long id, @RequestParam String reason, Principal principal,
+                         RedirectAttributes redirect) {
+        incidentService.reopen(id, currentEmployee(principal), reason);
+        return back(id, redirect, "The incident was reopened and sent back to the technician.");
+    }
+
+    private String back(Long id, RedirectAttributes redirect, String message) {
+        redirect.addFlashAttribute("message", message);
+        return "redirect:/employee/incidents/" + id;
     }
 
     private Employee currentEmployee(Principal principal) {

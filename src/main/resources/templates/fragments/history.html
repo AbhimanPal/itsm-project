@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- The audit trail of one incident. Usage: th:replace="~{fragments/history :: history(${history})}" -->
+<div th:fragment="history(records)">
+    <h2>History</h2>
+    <table>
+        <thead>
+        <tr><th>Time</th><th>Who</th><th>Action</th><th>Status</th><th>Details</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="r : ${records}">
+            <td th:text="${#temporals.format(r.timestamp, 'dd MMM, HH:mm:ss')}">time</td>
+            <td th:text="${r.actor}">who</td>
+            <td th:text="${r.action}">action</td>
+            <td th:text="${r.oldStatus == null ? '' : r.oldStatus + ' → '} + ${r.newStatus}">NEW → CLASSIFIED</td>
+            <td th:text="${r.description}">details</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

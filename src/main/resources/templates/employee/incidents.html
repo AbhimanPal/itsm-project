@@ -26,7 +26,7 @@
         </thead>
         <tbody>
         <tr th:each="i : ${incidents}">
-            <td th:text="${i.number}">INC0001</td>
+            <td><a th:href="@{/employee/incidents/{id}(id=${i.id})}" th:text="${i.number}">INC0001</a></td>
             <td th:text="${i.title}">Title</td>
             <td th:text="${i.service.name}">Service</td>
             <td th:text="${i.category.name}">Category</td>

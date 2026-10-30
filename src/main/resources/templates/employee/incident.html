@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${incident.number} + ' · I-ITSM'">Incident · I-ITSM</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="role-employee">
+<header th:replace="~{fragments/nav :: nav('employee')}"></header>
+<main class="card" th:with="st=${incident.status.name()}">
+    <p><a th:href="@{/employee/incidents}">← Back to my incidents</a></p>
+    <h1 th:text="${incident.number} + ' · ' + ${incident.title}">INC0001 · Title</h1>
+
+    <p class="alert ok" th:if="${message}" th:text="${message}"></p>
+
+    <dl class="facts">
+        <dt>Status</dt><dd th:text="${incident.status}">ASSIGNED</dd>
+        <dt>Priority</dt><dd><span th:class="'pill ' + ${incident.priority}" th:text="${incident.priority} + ' ' + ${incident.priority.label}">P1</span></dd>
+        <dt>Technician</dt><dd th:text="${incident.assignedTechnician != null} ? ${incident.assignedTechnician.name} : 'Not yet assigned'">Ravi</dd>
+        <dt>Resolve by</dt><dd th:text="${incident.resolutionDueAt != null} ? ${#temporals.format(incident.resolutionDueAt, 'dd MMM, HH:mm')} : '—'">time</dd>
+        <dt>Service</dt><dd th:text="${incident.service.name}">Service</dd>
+        <dt>Category</dt><dd th:text="${incident.category.name}">Category</dd>
+    </dl>
+
+    <h2>Description</h2>
+    <p class="pre" th:text="${incident.description}">Description</p>
+
+    <!-- The technician asked a question -->
+    <th:block th:if="${st == 'AWAITING_INFO'}">
+        <p class="alert warn">The technician needs more information. Please read their question below and reply.</p>
+        <form th:action="@{/employee/incidents/{id}/reply(id=${incident.id})}" method="post">
+            <label>Your reply <textarea name="text" rows="3" required></textarea></label>
+            <button class="primary" type="submit">Send reply</button>
+        </form>
+    </th:block>
+
+    <!-- The technician says it's fixed: confirm or reopen -->
+    <th:block th:if="${st == 'RESOLVED'}">
+        <h2>Resolution</h2>
+        <p class="pre" th:text="${incident.resolution}">Resolution</p>
+        <p class="alert warn">Is your problem fixed?</p>
+        <div class="row">
+            <form th:action="@{/employee/incidents/{id}/confirm(id=${incident.id})}" method="post">
+                <label>Rate the support (1 = poor, 5 = excellent)
+                    <select name="rating">
+                        <option value="5">5</option><option value="4">4</option><option value="3">3</option>
+                        <option value="2">2</option><option value="1">1</option>
+                    </select>
+                </label>
+                <label>Comment (optional) <textarea name="comment" rows="2"></textarea></label>
+                <button class="primary" type="submit">Yes, it's fixed</button>
+            </form>
+            <form th:action="@{/employee/incidents/{id}/reopen(id=${incident.id})}" method="post">
+                <label>What is still wrong? <textarea name="reason" rows="5" required></textarea></label>
+                <button type="submit">No, reopen it</button>
+            </form>
+        </div>
+    </th:block>
+
+    <th:block th:if="${st == 'CLOSED'}">
+        <h2>Resolution</h2>
+        <p class="pre" th:text="${incident.resolution}">Resolution</p>
+        <p th:if="${incident.feedbackRating != null}">
+            Your feedback: <strong th:text="${incident.feedbackRating} + '/5'">5/5</strong>
+            <span th:text="${incident.feedbackComment}">comment</span>
+        </p>
+    </th:block>
+
+    <h2>Messages</h2>
+    <p class="muted" th:if="${incident.notes.isEmpty()}">No messages yet.</p>
+    <ul class="notes">
+        <li th:each="n : ${incident.notes}" th:if="${n.type.name() != 'NOTE'}">
+            <span class="muted" th:text="${#temporals.format(n.createdAt, 'dd MMM, HH:mm')} + ' · ' + ${n.author.name} + ' · ' + ${n.type.label}">time · who · type</span>
+            <p class="pre" th:text="${n.text}">text</p>
+        </li>
+    </ul>
+
+    <div th:replace="~{fragments/history :: history(${history})}"></div>
+</main>
+</body>
+</html>

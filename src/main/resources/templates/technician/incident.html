@@ -76,6 +76,13 @@
         </label>
         <button type="submit">Add note</button>
     </form>
+
+    <th:block th:if="${incident.feedbackRating != null}">
+        <h2>Reporter feedback</h2>
+        <p th:text="${incident.feedbackRating} + '/5 ' + ${incident.feedbackComment}">5/5 Great</p>
+    </th:block>
+
+    <div th:replace="~{fragments/history :: history(${history})}"></div>
 </main>
 </body>
 </html>

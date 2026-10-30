@@ -1,6 +1,7 @@
 package com.itsm.itsm.web;
 
 import com.itsm.itsm.assignment.AssignmentService;
+import com.itsm.itsm.audit.AuditRecordRepository;
 import com.itsm.itsm.model.Incident;
 import com.itsm.itsm.model.Technician;
 import com.itsm.itsm.repository.TechnicianRepository;
@@ -20,12 +21,15 @@ public class TechnicianController {
     private final IncidentService incidentService;
     private final AssignmentService assignmentService;
     private final TechnicianRepository technicianRepository;
+    private final AuditRecordRepository auditRecordRepository;
 
     public TechnicianController(IncidentService incidentService, AssignmentService assignmentService,
-                                TechnicianRepository technicianRepository) {
+                                TechnicianRepository technicianRepository,
+                                AuditRecordRepository auditRecordRepository) {
         this.incidentService = incidentService;
         this.assignmentService = assignmentService;
         this.technicianRepository = technicianRepository;
+        this.auditRecordRepository = auditRecordRepository;
     }
 
     @GetMapping
@@ -40,7 +44,9 @@ public class TechnicianController {
 
     @GetMapping("/incidents/{id}")
     public String incident(@PathVariable Long id, Principal principal, Model model) {
-        model.addAttribute("incident", incidentService.getForTechnician(id, currentTechnician(principal)));
+        Incident incident = incidentService.getForTechnician(id, currentTechnician(principal));
+        model.addAttribute("incident", incident);
+        model.addAttribute("history", auditRecordRepository.findByIncidentOrderByTimestampAscIdAsc(incident));
         return "technician/incident";
     }
 

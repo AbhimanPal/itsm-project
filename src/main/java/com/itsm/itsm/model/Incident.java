@@ -64,6 +64,12 @@ public class Incident {
     private LocalDateTime acknowledgedAt;
     private LocalDateTime resolvedAt;
 
+    // Feedback from the reporter after the fix: rating 1-5 and a comment
+    private Integer feedbackRating;
+
+    @Column(length = 1000)
+    private String feedbackComment;
+
     // Composition: the incident owns its notes. cascade = save/delete them with the incident.
     @OneToMany(mappedBy = "incident", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("createdAt ASC")
@@ -95,6 +101,8 @@ public class Incident {
             acknowledgedAt = LocalDateTime.now();
         } else if (next == IncidentStatus.RESOLVED) {
             resolvedAt = LocalDateTime.now();
+        } else if (next == IncidentStatus.IN_PROGRESS) {
+            resolvedAt = null; // reopened: it is not resolved any more
         } else if (next == IncidentStatus.CLOSED) {
             closedAt = LocalDateTime.now();
         }
@@ -113,6 +121,11 @@ public class Incident {
     public void resolve(String resolutionText) {
         changeStatus(IncidentStatus.RESOLVED);
         resolution = resolutionText;
+    }
+
+    public void giveFeedback(int rating, String comment) {
+        feedbackRating = rating;
+        feedbackComment = comment;
     }
 
     public void addNote(User author, NoteType type, String text) {
@@ -228,6 +241,14 @@ public class Incident {
 
     public LocalDateTime getResolvedAt() {
         return resolvedAt;
+    }
+
+    public Integer getFeedbackRating() {
+        return feedbackRating;
+    }
+
+    public String getFeedbackComment() {
+        return feedbackComment;
     }
 
     // Read-only view, so nobody can add notes without going through addNote()
