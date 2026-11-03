@@ -8,6 +8,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -40,7 +41,7 @@ class RoleAccessTest {
     @WithMockUser(username = "admin@itsm.local", roles = "ADMIN")
     void adminCanOpenEveryAdminPage() throws Exception {
         for (String page : new String[]{"/admin", "/admin/incidents", "/admin/users", "/admin/services",
-                "/admin/categories", "/admin/sla", "/admin/audit", "/admin/users/technicians/new"}) {
+                "/admin/categories", "/admin/sla", "/admin/audit", "/admin/users/technicians/new", "/admin/live"}) {
             mvc.perform(get(page)).andExpect(status().isOk());
         }
     }
@@ -51,5 +52,23 @@ class RoleAccessTest {
         mvc.perform(get("/admin/incidents").param("status", "NEW").param("priority", "P1")
                         .param("from", "2026-11-01").param("technicianId", "0").param("slaStatus", ""))
                 .andExpect(status().isOk());
+    }
+
+    // Live charts: the JSON has one list of labels and one list of numbers per chart
+    @Test
+    @WithMockUser(username = "admin@itsm.local", roles = "ADMIN")
+    void adminGetsChartDataAsJson() throws Exception {
+        mvc.perform(get("/admin/api/stats"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").isNumber())
+                .andExpect(jsonPath("$.byStatus.labels.length()").value(9))    // one bar per status
+                .andExpect(jsonPath("$.byPriority.labels[0]").value("P1 Critical"))
+                .andExpect(jsonPath("$.technicianWorkload.labels").isArray());
+    }
+
+    @Test
+    @WithMockUser(username = "asha@itsm.local", roles = "EMPLOYEE")
+    void employeeCannotReadChartData() throws Exception {
+        mvc.perform(get("/admin/api/stats")).andExpect(status().isForbidden());
     }
 }

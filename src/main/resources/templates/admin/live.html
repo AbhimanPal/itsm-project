@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Live dashboard · I-ITSM</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <!-- Chart.js draws the charts. It is loaded from a CDN, so nothing is added to pom.xml -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body class="role-admin">
+<header th:replace="~{fragments/nav :: nav('admin')}"></header>
+<main class="card wide">
+    <h1>Live dashboard</h1>
+    <p class="muted">Updates by itself every 10 seconds. Last update: <strong id="updatedAt">loading…</strong></p>
+
+    <div class="stats">
+        <div class="stat"><strong id="total">–</strong><span>Incidents in total</span></div>
+        <div class="stat"><strong id="open">–</strong><span>Open</span></div>
+        <div class="stat"><strong id="unassigned">–</strong><span>Waiting for a technician</span></div>
+        <div class="stat danger"><strong id="breached">–</strong><span>SLA breached</span></div>
+    </div>
+
+    <div class="charts">
+        <section><h2>By status</h2><div class="chart-box"><canvas id="statusChart"></canvas></div></section>
+        <section><h2>By priority</h2><div class="chart-box"><canvas id="priorityChart"></canvas></div></section>
+        <section><h2>SLA status</h2><div class="chart-box"><canvas id="slaChart"></canvas></div></section>
+        <section><h2>Technician workload (active incidents)</h2><div class="chart-box"><canvas id="workloadChart"></canvas></div></section>
+        <section class="full"><h2>Incidents per service</h2><div class="chart-box"><canvas id="serviceChart"></canvas></div></section>
+    </div>
+</main>
+
+<script th:inline="javascript">
+    // The URL of the JSON data. Thymeleaf fills it in, like th:href does for links.
+    const statsUrl = /*[[@{/admin/api/stats}]]*/ '/admin/api/stats';
+
+    const purple = '#7c3aed';
+    // One colour per slice, in the same order as the labels the server sends
+    const priorityColours = ['#b91c1c', '#ea580c', '#ca8a04', '#16a34a'];          // P1..P4
+    const slaColours = ['#16a34a', '#ca8a04', '#b91c1c', '#2563eb', '#9ca3af'];     // on track, at risk, breached, met, no SLA
+
+    // Makes one chart with no data yet. type is 'bar' or 'doughnut'.
+    function makeChart(canvasId, type, colours, horizontal) {
+        return new Chart(document.getElementById(canvasId), {
+            type: type,
+            data: { labels: [], datasets: [{ data: [], backgroundColor: colours }] },
+            options: {
+                maintainAspectRatio: false,                      // fill the 280px-high .chart-box
+                indexAxis: horizontal ? 'y' : 'x',               // 'y' = bars go sideways
+                plugins: { legend: { display: type === 'doughnut' } },
+                scales: type === 'bar' ? { [horizontal ? 'x' : 'y']: { beginAtZero: true, ticks: { precision: 0 } } } : {}
+            }
+        });
+    }
+
+    const charts = {
+        byStatus: makeChart('statusChart', 'bar', purple, false),
+        byPriority: makeChart('priorityChart', 'doughnut', priorityColours, false),
+        bySla: makeChart('slaChart', 'doughnut', slaColours, false),
+        technicianWorkload: makeChart('workloadChart', 'bar', purple, true),
+        incidentsPerService: makeChart('serviceChart', 'bar', purple, false)
+    };
+
+    // Asks the server for fresh numbers and puts them into the page
+    async function refresh() {
+        try {
+            const response = await fetch(statsUrl);
+            if (!response.ok) {
+                throw new Error('status ' + response.status);
+            }
+            const stats = await response.json();
+
+            document.getElementById('total').textContent = stats.total;
+            document.getElementById('open').textContent = stats.open;
+            document.getElementById('unassigned').textContent = stats.unassigned;
+            document.getElementById('breached').textContent = stats.breached;
+            document.getElementById('updatedAt').textContent = stats.updatedAt;
+
+            // Each key of "charts" matches a field name in the JSON (from the DashboardStats record)
+            for (const name in charts) {
+                charts[name].data.labels = stats[name].labels;
+                charts[name].data.datasets[0].data = stats[name].values;
+                charts[name].update();
+            }
+        } catch (error) {
+            // e.g. the app was stopped or the login expired: keep the old charts and say so
+            document.getElementById('updatedAt').textContent = 'could not update (' + error.message + ')';
+        }
+    }
+
+    refresh();                    // once straight away
+    setInterval(refresh, 10000);  // then every 10 000 ms = 10 seconds
+</script>
+</body>
+</html>

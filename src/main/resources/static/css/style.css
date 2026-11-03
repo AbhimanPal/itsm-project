@@ -95,3 +95,10 @@ td.bar-cell { width: 40%; }
 .filters label { margin-top: 8px; }
 .filter-buttons { display: flex; gap: 8px; align-items: center; }
 .filter-buttons .primary { margin-top: 0; }
+
+/* Live charts dashboard */
+.charts { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+.charts section { min-width: 0; }
+.charts .full { grid-column: 1 / -1; }
+.chart-box { position: relative; height: 280px; }  /* Chart.js sizes each chart to this box */
+@media (max-width: 800px) { .charts { grid-template-columns: 1fr; } }
