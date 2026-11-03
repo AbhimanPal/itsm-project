@@ -121,6 +121,20 @@ class SlaMonitorIntegrationTest {
     }
 
     @Test
+    void unassignedIncidentGoesToAdmin() {
+        // Every technician is away, so nobody can be assigned
+        for (Technician t : technicianRepository.findAll()) {
+            t.setAvailable(false);
+        }
+        Incident incident = reportPaymentOutage();
+        assertNull(incident.getAssignedTechnician());
+
+        slaMonitor.check(incident.getCreatedAt().plusMinutes(6)); // past the 5-minute response deadline
+        assertEquals(EscalationLevel.ADMIN, incident.getEscalationLevel());
+        assertEquals(1, actions(incident).stream().filter("ESCALATED"::equals).count());
+    }
+
+    @Test
     void teamLeadsOwnIncidentGoesStraightToAdmin() {
         // Wi-Fi + Network goes to Ravi, who is the only team lead
         Long network = categoryRepository.findByNameIgnoreCase("Network").orElseThrow().getId();

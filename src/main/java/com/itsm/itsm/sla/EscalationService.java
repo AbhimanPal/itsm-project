@@ -30,8 +30,9 @@ public class EscalationService {
 
     // Returns true if the incident was escalated
     public boolean escalateIfNeeded(Incident incident, LocalDateTime now) {
-        // Only incidents that are assigned but not yet acknowledged can be escalated
-        if (incident.getStatus() != IncidentStatus.ASSIGNED) {
+        // Only incidents nobody has acknowledged yet can be escalated:
+        // CLASSIFIED (no technician was free) or ASSIGNED (technician hasn't responded)
+        if (incident.getStatus() != IncidentStatus.CLASSIFIED && incident.getStatus() != IncidentStatus.ASSIGNED) {
             return false;
         }
         LocalDateTime due = incident.getNextEscalationDueAt();
@@ -40,6 +41,12 @@ public class EscalationService {
         }
 
         Technician current = incident.getAssignedTechnician();
+        if (current == null) {
+            // Nobody to hand it to, so only an admin can sort this out
+            incident.escalate(EscalationLevel.ADMIN, now);
+            publish(incident, "No technician was free and the response deadline passed. Escalated to the admin.");
+            return true;
+        }
         if (incident.getEscalationLevel() == EscalationLevel.NONE) {
             Optional<Technician> lead = findTeamLead(current);
             if (lead.isPresent()) {
@@ -69,6 +76,6 @@ public class EscalationService {
     private void publish(Incident incident, String description) {
         // actor = null: the system did it, not a person
         eventPublisher.publish(new IncidentEvent(incident, null, EventType.ESCALATED,
-                IncidentStatus.ASSIGNED, IncidentStatus.ASSIGNED, description));
+                incident.getStatus(), incident.getStatus(), description));
     }
 }
