@@ -43,4 +43,11 @@ public class ITService {
     public String getDescription() {
         return description;
     }
+
+    // The admin can edit a service. Validation happens in AdminCatalogService.
+    public void update(String name, int criticality, String description) {
+        this.name = name;
+        this.criticality = criticality;
+        this.description = description;
+    }
 }

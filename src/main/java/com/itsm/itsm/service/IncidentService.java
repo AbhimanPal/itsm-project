@@ -8,11 +8,13 @@ import com.itsm.itsm.exception.InvalidInputException;
 import com.itsm.itsm.exception.ServiceNotFoundException;
 import com.itsm.itsm.exception.TechnicianUnavailableException;
 import com.itsm.itsm.exception.UnauthorizedOperationException;
+import com.itsm.itsm.exception.WorkloadExceededException;
 import com.itsm.itsm.model.*;
 import com.itsm.itsm.priority.PriorityStrategy;
 import com.itsm.itsm.repository.CategoryRepository;
 import com.itsm.itsm.repository.ITServiceRepository;
 import com.itsm.itsm.repository.IncidentRepository;
+import com.itsm.itsm.repository.TechnicianRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +29,7 @@ public class IncidentService {
     private final SlaService slaService;
     private final AssignmentService assignmentService;
     private final IncidentEventPublisher eventPublisher;
+    private final TechnicianRepository technicianRepository;
 
     // We only know the PriorityStrategy interface, not which class implements it.
     // Spring "injects" the implementation (ScoreBasedPriorityStrategy) here.
@@ -35,7 +38,7 @@ public class IncidentService {
     public IncidentService(IncidentRepository incidentRepository, CategoryRepository categoryRepository,
                            ITServiceRepository serviceRepository, SlaService slaService,
                            AssignmentService assignmentService, IncidentEventPublisher eventPublisher,
-                           PriorityStrategy priorityStrategy) {
+                           PriorityStrategy priorityStrategy, TechnicianRepository technicianRepository) {
         this.incidentRepository = incidentRepository;
         this.categoryRepository = categoryRepository;
         this.serviceRepository = serviceRepository;
@@ -43,6 +46,7 @@ public class IncidentService {
         this.assignmentService = assignmentService;
         this.eventPublisher = eventPublisher;
         this.priorityStrategy = priorityStrategy;
+        this.technicianRepository = technicianRepository;
     }
 
     // Employee reports a problem: create -> priority -> classify -> SLA -> assign
@@ -178,6 +182,50 @@ public class IncidentService {
         String text = requireText(reason, "The reason");
         incident.addNote(employee, NoteType.REPLY, "Not fixed: " + text);
         moveTo(incident, employee, IncidentStatus.IN_PROGRESS, "Reopened by reporter: " + text);
+    }
+
+    // ----- Admin actions -----
+
+    // Every incident that passes the filters, newest first
+    public List<Incident> search(IncidentSearch search) {
+        return incidentRepository.findAllByOrderByCreatedAtDesc().stream()
+                .filter(search::matches)
+                .toList();
+    }
+
+    public Incident getForAdmin(Long incidentId) {
+        return findIncident(incidentId);
+    }
+
+    // For incidents the strategy could not assign (nobody was free): the admin picks someone.
+    // assignTo() only allows this from CLASSIFIED, so an assigned incident can't be "stolen".
+    @Transactional
+    public void assignManually(Long incidentId, Long technicianId, Admin admin) {
+        Incident incident = findIncident(incidentId);
+        Technician technician = technicianRepository.findById(technicianId)
+                .orElseThrow(() -> new InvalidInputException("Unknown technician id " + technicianId + "."));
+        if (!technician.isAvailable()) {
+            throw new TechnicianUnavailableException(technician.getName() + " is marked as unavailable.");
+        }
+        if (assignmentService.workloadOf(technician) >= technician.getMaxActiveIncidents()) {
+            throw new WorkloadExceededException(technician);
+        }
+        IncidentStatus old = incident.getStatus();
+        incident.assignTo(technician);
+        publish(incident, admin, EventType.ASSIGNED, old, IncidentStatus.ASSIGNED,
+                "Assigned to " + technician.getName() + " by the admin.");
+    }
+
+    // Try the active strategy again, e.g. after a technician became available
+    @Transactional
+    public Technician retryAutoAssign(Long incidentId, Admin admin) {
+        Incident incident = findIncident(incidentId);
+        IncidentStatus old = incident.getStatus();
+        Technician technician = assignmentService.assign(incident);
+        publish(incident, admin, EventType.ASSIGNED, old, IncidentStatus.ASSIGNED,
+                "Assigned to " + technician.getName() + " ("
+                        + assignmentService.getActiveStrategy().getKey() + " strategy, started by the admin).");
+        return technician;
     }
 
     // ----- Helpers -----

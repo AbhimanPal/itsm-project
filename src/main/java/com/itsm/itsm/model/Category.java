@@ -36,4 +36,9 @@ public class Category {
     public String getKeywords() {
         return keywords;
     }
+
+    public void update(String name, String keywords) {
+        this.name = name;
+        this.keywords = keywords;
+    }
 }

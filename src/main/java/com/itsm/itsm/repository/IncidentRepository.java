@@ -11,6 +11,8 @@ import java.util.List;
 
 public interface IncidentRepository extends JpaRepository<Incident, Long> {
 
+    List<Incident> findAllByOrderByCreatedAtDesc();
+
     List<Incident> findByReporterOrderByCreatedAtDesc(Employee reporter);
 
     List<Incident> findByAssignedTechnicianOrderByCreatedAtDesc(Technician technician);

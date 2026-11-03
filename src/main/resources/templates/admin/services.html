@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>IT services · I-ITSM</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="role-admin">
+<header th:replace="~{fragments/nav :: nav('admin')}"></header>
+<main class="card">
+    <h1>IT services</h1>
+    <p class="muted">Criticality (1 = low, 3 = high) is part of the priority formula:
+        impact × urgency × criticality.</p>
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <table>
+        <thead>
+        <tr><th>Name</th><th>Criticality</th><th>Description</th><th></th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="s : ${services}">
+            <td th:text="${s.name}">Email</td>
+            <td th:text="${s.criticality}">2</td>
+            <td th:text="${s.description}">Campus email</td>
+            <td><a th:href="@{/admin/services(edit=${s.id})}">Edit</a></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h2 th:text="${editing != null} ? 'Edit ' + ${editing.name} : 'Add a service'">Add a service</h2>
+    <form th:action="@{/admin/services}" method="post">
+        <input type="hidden" name="id" th:value="${editing?.id}">
+        <div class="row">
+            <label>Name
+                <input name="name" required maxlength="100" th:value="${editing?.name}">
+            </label>
+            <label>Criticality
+                <select name="criticality">
+                    <option th:each="c : ${ {1, 2, 3} }" th:value="${c}" th:text="${c}"
+                            th:selected="${editing != null and editing.criticality == c}">1</option>
+                </select>
+            </label>
+        </div>
+        <label>Description
+            <input name="description" maxlength="255" th:value="${editing?.description}">
+        </label>
+        <button class="primary" type="submit">Save service</button>
+        <a th:if="${editing != null}" th:href="@{/admin/services}">Cancel</a>
+    </form>
+</main>
+</body>
+</html>

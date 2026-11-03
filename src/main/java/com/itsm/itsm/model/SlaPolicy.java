@@ -52,4 +52,14 @@ public class SlaPolicy {
     public int getResolutionMinutes() {
         return resolutionMinutes;
     }
+
+    // Only the times can change; service + priority identify the rule
+    public void changeTimes(int responseMinutes, int resolutionMinutes) {
+        this.responseMinutes = responseMinutes;
+        this.resolutionMinutes = resolutionMinutes;
+    }
+
+    public boolean isDefault() {
+        return service == null;
+    }
 }

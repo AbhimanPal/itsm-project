@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Categories · I-ITSM</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="role-admin">
+<header th:replace="~{fragments/nav :: nav('admin')}"></header>
+<main class="card">
+    <h1>Incident categories</h1>
+    <p class="muted">Categories are stored as data, so new ones need no code change.
+        Keywords will be used later to suggest a category automatically.</p>
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <table>
+        <thead>
+        <tr><th>Name</th><th>Keywords</th><th></th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="c : ${categories}">
+            <td th:text="${c.name}">Network</td>
+            <td th:text="${c.keywords}">wifi,vpn</td>
+            <td><a th:href="@{/admin/categories(edit=${c.id})}">Edit</a></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h2 th:text="${editing != null} ? 'Edit ' + ${editing.name} : 'Add a category'">Add a category</h2>
+    <form th:action="@{/admin/categories}" method="post">
+        <input type="hidden" name="id" th:value="${editing?.id}">
+        <label>Name
+            <input name="name" required maxlength="100" th:value="${editing?.name}">
+        </label>
+        <label>Keywords (comma-separated)
+            <input name="keywords" maxlength="255" placeholder="wifi, router, vpn" th:value="${editing?.keywords}">
+        </label>
+        <button class="primary" type="submit">Save category</button>
+        <a th:if="${editing != null}" th:href="@{/admin/categories}">Cancel</a>
+    </form>
+</main>
+</body>
+</html>

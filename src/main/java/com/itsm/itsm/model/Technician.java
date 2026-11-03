@@ -34,6 +34,18 @@ public class Technician extends User {
         return Role.TECHNICIAN;
     }
 
+    // Replace all skills at once (used by the admin's edit form)
+    public void replaceSkills(Set<Category> newSkills) {
+        skills.clear();
+        skills.addAll(newSkills);
+    }
+
+    public void updateSettings(int maxActiveIncidents, boolean available, boolean teamLead) {
+        this.maxActiveIncidents = maxActiveIncidents;
+        this.available = available;
+        this.teamLead = teamLead;
+    }
+
     public void addSkill(Category category) {
         skills.add(category);
     }

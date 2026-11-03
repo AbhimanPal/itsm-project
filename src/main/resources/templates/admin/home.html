@@ -7,9 +7,96 @@
 </head>
 <body class="role-admin">
 <header th:replace="~{fragments/nav :: nav('admin')}"></header>
-<main class="card">
+<main class="card wide">
     <h1>Admin dashboard</h1>
-    <p class="alert ok" th:if="${message}" th:text="${message}"></p>
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <!-- Incident overview: big numbers, each a link to the filtered incident list -->
+    <div class="stats">
+        <a class="stat" th:href="@{/admin/incidents}">
+            <strong th:text="${total}">12</strong><span>Incidents in total</span></a>
+        <div class="stat">
+            <strong th:text="${open}">5</strong><span>Open</span></div>
+        <a class="stat" th:href="@{/admin/incidents(technicianId=0)}">
+            <strong th:text="${unassigned}">1</strong><span>Waiting for a technician</span></a>
+        <a class="stat danger" th:href="@{/admin/incidents(slaStatus='BREACHED')}">
+            <strong th:text="${bySla.get(T(com.itsm.itsm.model.SlaStatus).BREACHED)}">2</strong><span>SLA breached</span></a>
+        <a class="stat warn" th:href="@{/admin/incidents(slaStatus='AT_RISK')}">
+            <strong th:text="${bySla.get(T(com.itsm.itsm.model.SlaStatus).AT_RISK)}">1</strong><span>SLA at risk</span></a>
+    </div>
+
+    <div class="columns">
+        <section>
+            <h2>By status</h2>
+            <table>
+                <tr th:each="entry : ${byStatus}">
+                    <td><a th:href="@{/admin/incidents(status=${entry.key})}" th:text="${entry.key}">NEW</a></td>
+                    <td class="num" th:text="${entry.value}">3</td>
+                    <td class="bar-cell"><div class="bar"
+                         th:style="'width:' + ${total == 0 ? 0 : entry.value * 100 / total} + '%'"></div></td>
+                </tr>
+            </table>
+        </section>
+        <section>
+            <h2>By priority</h2>
+            <table>
+                <tr th:each="entry : ${byPriority}">
+                    <td><a th:href="@{/admin/incidents(priority=${entry.key})}">
+                        <span th:class="'pill ' + ${entry.key}" th:text="${entry.key} + ' ' + ${entry.key.label}">P1</span></a></td>
+                    <td class="num" th:text="${entry.value}">3</td>
+                    <td class="bar-cell"><div class="bar"
+                         th:style="'width:' + ${total == 0 ? 0 : entry.value * 100 / total} + '%'"></div></td>
+                </tr>
+            </table>
+            <h2>By SLA status</h2>
+            <table>
+                <tr th:each="entry : ${bySla}">
+                    <td><a th:href="@{/admin/incidents(slaStatus=${entry.key})}">
+                        <span th:class="'sla ' + ${entry.key}" th:text="${entry.key.label}">On track</span></a></td>
+                    <td class="num" th:text="${entry.value}">3</td>
+                    <td class="bar-cell"><div class="bar"
+                         th:style="'width:' + ${total == 0 ? 0 : entry.value * 100 / total} + '%'"></div></td>
+                </tr>
+            </table>
+        </section>
+    </div>
+
+    <h2>Technician workload</h2>
+    <table>
+        <thead>
+        <tr><th>Technician</th><th>Active / max</th><th></th><th>Resolved</th><th>SLA breached</th><th>Available</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="w : ${workloads}">
+            <td><a th:href="@{/admin/incidents(technicianId=${w.technician().id})}" th:text="${w.technician().name}">Ravi</a>
+                <span class="muted" th:if="${w.technician().teamLead}">· lead</span></td>
+            <td th:text="${w.active()} + ' / ' + ${w.technician().maxActiveIncidents}">2 / 5</td>
+            <td class="bar-cell"><div th:class="${w.percentFull() >= 100} ? 'bar full' : 'bar'"
+                                      th:style="'width:' + ${w.percentFull()} + '%'"></div></td>
+            <td th:text="${w.resolved()}">4</td>
+            <td th:text="${w.breached()}">0</td>
+            <td th:text="${w.technician().available} ? 'Yes' : 'No'">Yes</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h2>Incidents per service</h2>
+    <table>
+        <thead>
+        <tr><th>Service</th><th>Criticality</th><th>Total</th><th></th><th>Open</th><th>SLA breached</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="r : ${serviceReports}">
+            <td><a th:href="@{/admin/incidents(serviceId=${r.service().id})}" th:text="${r.service().name}">Email</a></td>
+            <td th:text="${r.service().criticality}">2</td>
+            <td th:text="${r.total()}">3</td>
+            <td class="bar-cell"><div class="bar"
+                 th:style="'width:' + ${total == 0 ? 0 : r.total() * 100 / total} + '%'"></div></td>
+            <td th:text="${r.open()}">1</td>
+            <td th:text="${r.breached()}">0</td>
+        </tr>
+        </tbody>
+    </table>
 
     <h2>Technician assignment strategy</h2>
     <p class="muted">Used for every new incident. Changing it needs no code change or restart.</p>
@@ -20,22 +107,6 @@
         </label>
         <button class="primary" type="submit">Save strategy</button>
     </form>
-
-    <h2>SLA policies</h2>
-    <table>
-        <thead>
-        <tr><th>Service</th><th>Priority</th><th>Respond within</th><th>Resolve within</th></tr>
-        </thead>
-        <tbody>
-        <tr th:each="p : ${slaPolicies}">
-            <td th:text="${p.service != null} ? ${p.service.name} : 'All services (default)'">Service</td>
-            <td><span th:class="'pill ' + ${p.priority}" th:text="${p.priority}">P1</span></td>
-            <td th:text="${p.responseMinutes} + ' min'">5 min</td>
-            <td th:text="${p.resolutionMinutes} + ' min'">30 min</td>
-        </tr>
-        </tbody>
-    </table>
-    <p class="muted">Coming next: manage users, technicians, services, categories and SLA policies; all incidents; reports.</p>
 </main>
 </body>
 </html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit technician · I-ITSM</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="role-admin">
+<header th:replace="~{fragments/nav :: nav('admin')}"></header>
+<main class="card">
+    <p><a th:href="@{/admin/users}">← Back to users</a></p>
+    <h1 th:text="${technician.name}">Ravi Kumar</h1>
+    <p class="muted" th:text="${technician.email} + ' · working on ' + ${workload} + ' incident(s) now'">email</p>
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <form th:action="@{/admin/users/technicians/{id}(id=${technician.id})}" method="post">
+        <label>Max active incidents
+            <input type="number" name="maxActiveIncidents" min="1" max="20" required
+                   th:value="${technician.maxActiveIncidents}">
+        </label>
+        <label class="radio"><input type="checkbox" name="available" value="true"
+                                    th:checked="${technician.available}"> Available for new incidents</label>
+        <label class="radio"><input type="checkbox" name="teamLead" value="true"
+                                    th:checked="${technician.teamLead}"> Team lead (receives escalations)</label>
+
+        <h2>Skills</h2>
+        <div class="checks">
+            <label class="radio" th:each="c : ${categories}">
+                <input type="checkbox" name="skillIds" th:value="${c.id}" th:checked="${technician.hasSkill(c)}">
+                <span th:text="${c.name}">Network</span>
+            </label>
+        </div>
+        <button class="primary" type="submit">Save changes</button>
+    </form>
+</main>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>SLA policies · I-ITSM</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="role-admin">
+<header th:replace="~{fragments/nav :: nav('admin')}"></header>
+<main class="card">
+    <h1>SLA policies</h1>
+    <p class="muted">A service's own rule wins; otherwise the default rule for that priority is used.
+        Changes apply to incidents reported from now on.</p>
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <table>
+        <thead>
+        <tr><th>Service</th><th>Priority</th><th>Respond within</th><th>Resolve within</th><th></th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="p : ${slaPolicies}">
+            <td th:text="${p.isDefault()} ? 'All services (default)' : ${p.service.name}">Service</td>
+            <td><span th:class="'pill ' + ${p.priority}" th:text="${p.priority}">P1</span></td>
+            <td th:text="${p.responseMinutes} + ' min'">5 min</td>
+            <td th:text="${p.resolutionMinutes} + ' min'">30 min</td>
+            <td>
+                <form th:unless="${p.isDefault()}" th:action="@{/admin/sla/{id}/delete(id=${p.id})}" method="post">
+                    <button type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h2>Add or change a rule</h2>
+    <p class="muted">If a rule for the same service and priority exists, its times are replaced.</p>
+    <form th:action="@{/admin/sla}" method="post">
+        <div class="row">
+            <label>Service
+                <select name="serviceId">
+                    <option value="">All services (default)</option>
+                    <option th:each="s : ${services}" th:value="${s.id}" th:text="${s.name}">Email</option>
+                </select>
+            </label>
+            <label>Priority
+                <select name="priority">
+                    <option th:each="pr : ${priorities}" th:value="${pr}" th:text="${pr} + ' ' + ${pr.label}">P1</option>
+                </select>
+            </label>
+        </div>
+        <div class="row">
+            <label>Respond within (minutes)
+                <input type="number" name="responseMinutes" min="1" required>
+            </label>
+            <label>Resolve within (minutes)
+                <input type="number" name="resolutionMinutes" min="1" required>
+            </label>
+        </div>
+        <button class="primary" type="submit">Save rule</button>
+    </form>
+</main>
+</body>
+</html>

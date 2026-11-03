@@ -11,4 +11,6 @@ public interface ITServiceRepository extends JpaRepository<ITService, Long> {
     List<ITService> findAllByOrderByNameAsc();
 
     Optional<ITService> findByName(String name);
+
+    Optional<ITService> findByNameIgnoreCase(String name);
 }

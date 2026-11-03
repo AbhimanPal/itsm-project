@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Users · I-ITSM</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="role-admin">
+<header th:replace="~{fragments/nav :: nav('admin')}"></header>
+<main class="card wide">
+    <div class="heading-row">
+        <h1>Users</h1>
+        <a class="button primary" th:href="@{/admin/users/technicians/new}">Add technician</a>
+    </div>
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <h2>Technicians</h2>
+    <table>
+        <thead>
+        <tr><th>Name</th><th>Email</th><th>Skills</th><th>Workload</th><th>Available</th><th>Team lead</th><th></th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="t : ${technicians}">
+            <td th:text="${t.name}">Ravi</td>
+            <td th:text="${t.email}">ravi@itsm.local</td>
+            <td><span th:each="s, it : ${t.skills}" th:text="${s.name} + ${it.last ? '' : ', '}">Network</span></td>
+            <td th:text="${workload.get(t.id)} + ' / ' + ${t.maxActiveIncidents}">2 / 5</td>
+            <td th:text="${t.available} ? 'Yes' : 'No'">Yes</td>
+            <td th:text="${t.teamLead} ? 'Yes' : ''">Yes</td>
+            <td><a th:href="@{/admin/users/technicians/{id}(id=${t.id})}">Edit</a></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h2>All accounts</h2>
+    <table>
+        <thead>
+        <tr><th>Name</th><th>Email</th><th>Role</th><th>Department</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="u : ${users}">
+            <td th:text="${u.name}">Asha</td>
+            <td th:text="${u.email}">asha@itsm.local</td>
+            <td th:text="${u.role}">EMPLOYEE</td>
+            <td th:text="${u.role.name() == 'EMPLOYEE'} ? ${u.department} : ''">Finance</td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>

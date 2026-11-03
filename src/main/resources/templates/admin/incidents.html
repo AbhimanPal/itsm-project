@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>All incidents · I-ITSM</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="role-admin">
+<header th:replace="~{fragments/nav :: nav('admin')}"></header>
+<main class="card wide">
+    <h1>All incidents</h1>
+
+    <!-- method="get": the filters end up in the URL, so a filtered list can be bookmarked -->
+    <form th:action="@{/admin/incidents}" method="get" th:object="${search}" class="filters">
+        <label>ID <input th:field="*{number}" placeholder="INC0001"></label>
+        <label>From <input type="date" th:field="*{from}"></label>
+        <label>To <input type="date" th:field="*{to}"></label>
+        <label>Status
+            <select th:field="*{status}">
+                <option value="">Any</option>
+                <option th:each="s : ${statuses}" th:value="${s}" th:text="${s}">NEW</option>
+            </select>
+        </label>
+        <label>Priority
+            <select th:field="*{priority}">
+                <option value="">Any</option>
+                <option th:each="p : ${priorities}" th:value="${p}" th:text="${p} + ' ' + ${p.label}">P1</option>
+            </select>
+        </label>
+        <label>Category
+            <select th:field="*{categoryId}">
+                <option value="">Any</option>
+                <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}">Network</option>
+            </select>
+        </label>
+        <label>Service
+            <select th:field="*{serviceId}">
+                <option value="">Any</option>
+                <option th:each="s : ${services}" th:value="${s.id}" th:text="${s.name}">Email</option>
+            </select>
+        </label>
+        <label>Technician
+            <select th:field="*{technicianId}">
+                <option value="">Any</option>
+                <option value="0">Not assigned</option>
+                <option th:each="t : ${technicians}" th:value="${t.id}" th:text="${t.name}">Ravi</option>
+            </select>
+        </label>
+        <label>SLA
+            <select th:field="*{slaStatus}">
+                <option value="">Any</option>
+                <option th:each="s : ${slaStatuses}" th:value="${s}" th:text="${s.label}">On track</option>
+            </select>
+        </label>
+        <div class="filter-buttons">
+            <button class="primary" type="submit">Search</button>
+            <a class="button" th:href="@{/admin/incidents}">Clear</a>
+        </div>
+    </form>
+
+    <p class="muted" th:text="${incidents.size()} + ' incident(s) found'">3 incident(s) found</p>
+
+    <table th:unless="${incidents.isEmpty()}">
+        <thead>
+        <tr>
+            <th>ID</th><th>Title</th><th>Reporter</th><th>Service</th><th>Category</th>
+            <th>Priority</th><th>Status</th><th>Technician</th><th>SLA</th><th>Reported</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="i : ${incidents}">
+            <td><a th:href="@{/admin/incidents/{id}(id=${i.id})}" th:text="${i.number}">INC0001</a></td>
+            <td th:text="${i.title}">Title</td>
+            <td th:text="${i.reporter.name}">Asha</td>
+            <td th:text="${i.service.name}">Service</td>
+            <td th:text="${i.category.name}">Category</td>
+            <td><span th:class="'pill ' + ${i.priority}" th:text="${i.priority}">P1</span></td>
+            <td th:text="${i.status}">NEW</td>
+            <td th:text="${i.assignedTechnician != null} ? ${i.assignedTechnician.name} : '—'">Tech</td>
+            <td><span th:class="'sla ' + ${i.slaStatus}" th:text="${i.slaStatus.label}">On track</span></td>
+            <td th:text="${#temporals.format(i.createdAt, 'dd MMM, HH:mm')}">date</td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>

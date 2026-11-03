@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Add technician · I-ITSM</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="role-admin">
+<header th:replace="~{fragments/nav :: nav('admin')}"></header>
+<main class="card">
+    <p><a th:href="@{/admin/users}">← Back to users</a></p>
+    <h1>Add technician</h1>
+    <form th:action="@{/admin/users/technicians}" th:object="${form}" method="post">
+        <div class="row">
+            <label>Name
+                <input th:field="*{name}">
+                <span class="field-error" th:errors="*{name}"></span>
+            </label>
+            <label>Email
+                <input type="email" th:field="*{email}">
+                <span class="field-error" th:errors="*{email}"></span>
+            </label>
+        </div>
+        <div class="row">
+            <label>Starting password
+                <input type="password" th:field="*{password}">
+                <span class="field-error" th:errors="*{password}"></span>
+            </label>
+            <label>Max active incidents
+                <input type="number" min="1" max="20" th:field="*{maxActiveIncidents}">
+                <span class="field-error" th:errors="*{maxActiveIncidents}"></span>
+            </label>
+        </div>
+        <label class="radio"><input type="checkbox" th:field="*{teamLead}"> Team lead (receives escalations)</label>
+
+        <h2>Skills</h2>
+        <span class="field-error" th:errors="*{skillIds}"></span>
+        <div class="checks">
+            <label class="radio" th:each="c : ${categories}">
+                <input type="checkbox" th:field="*{skillIds}" th:value="${c.id}">
+                <span th:text="${c.name}">Network</span>
+            </label>
+        </div>
+        <button class="primary" type="submit">Create technician</button>
+    </form>
+</main>
+</body>
+</html>

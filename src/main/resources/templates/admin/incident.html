@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${incident.number} + ' · I-ITSM'">Incident · I-ITSM</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="role-admin">
+<header th:replace="~{fragments/nav :: nav('admin')}"></header>
+<main class="card">
+    <p><a th:href="@{/admin/incidents}">← All incidents</a></p>
+    <h1 th:text="${incident.number} + ' · ' + ${incident.title}">INC0001 · Title</h1>
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <dl class="facts">
+        <dt>Status</dt><dd th:text="${incident.status}">ASSIGNED</dd>
+        <dt>Priority</dt><dd><span th:class="'pill ' + ${incident.priority}" th:text="${incident.priority} + ' ' + ${incident.priority.label}">P1</span></dd>
+        <dt>SLA</dt><dd><span th:class="'sla ' + ${incident.slaStatus}" th:text="${incident.slaStatus.label}">On track</span></dd>
+        <dt>Respond by</dt><dd th:text="${incident.responseDueAt != null} ? ${#temporals.format(incident.responseDueAt, 'dd MMM, HH:mm')} : '—'">time</dd>
+        <dt>Resolve by</dt><dd th:text="${incident.resolutionDueAt != null} ? ${#temporals.format(incident.resolutionDueAt, 'dd MMM, HH:mm')} : '—'">time</dd>
+        <dt>Reporter</dt><dd th:text="${incident.reporter.name} + ' (' + ${incident.reporter.department} + ')'">Asha</dd>
+        <dt>Technician</dt><dd th:text="${incident.assignedTechnician != null} ? ${incident.assignedTechnician.name} : 'Not assigned'">Ravi</dd>
+        <dt>Service</dt><dd th:text="${incident.service.name}">Service</dd>
+        <dt>Category</dt><dd th:text="${incident.category.name}">Category</dd>
+        <dt>Impact / urgency / users</dt><dd th:text="${incident.impact} + ' / ' + ${incident.urgency} + ' / ' + ${incident.usersAffected}">3 / 3 / 10</dd>
+    </dl>
+
+    <!-- Only incidents that nobody could take yet can be assigned here -->
+    <th:block th:if="${incident.status.name() == 'CLASSIFIED'}">
+        <h2>Assign a technician</h2>
+        <p class="muted">No technician was free when this was reported.</p>
+        <div class="row">
+            <form th:action="@{/admin/incidents/{id}/assign(id=${incident.id})}" method="post">
+                <label>Technician
+                    <select name="technicianId">
+                        <option th:each="t : ${technicians}" th:value="${t.id}"
+                                th:text="${t.name} + (${t.available} ? '' : ' (unavailable)')">Ravi</option>
+                    </select>
+                </label>
+                <button class="primary" type="submit">Assign</button>
+            </form>
+            <form th:action="@{/admin/incidents/{id}/auto-assign(id=${incident.id})}" method="post">
+                <label>&nbsp;</label>
+                <button type="submit">Try automatic assignment again</button>
+            </form>
+        </div>
+    </th:block>
+
+    <h2>Description</h2>
+    <p class="pre" th:text="${incident.description}">Description</p>
+
+    <th:block th:if="${incident.resolution != null}">
+        <h2>Resolution</h2>
+        <p class="pre" th:text="${incident.resolution}">Resolution</p>
+    </th:block>
+
+    <h2>Notes</h2>
+    <p class="muted" th:if="${incident.notes.isEmpty()}">No notes yet.</p>
+    <ul class="notes">
+        <li th:each="n : ${incident.notes}">
+            <span class="muted" th:text="${#temporals.format(n.createdAt, 'dd MMM, HH:mm')} + ' · ' + ${n.author.name} + ' · ' + ${n.type.label}">time · who · type</span>
+            <p class="pre" th:text="${n.text}">text</p>
+        </li>
+    </ul>
+
+    <th:block th:if="${incident.feedbackRating != null}">
+        <h2>Reporter feedback</h2>
+        <p th:text="${incident.feedbackRating} + '/5 ' + ${incident.feedbackComment}">5/5 Great</p>
+    </th:block>
+
+    <div th:replace="~{fragments/history :: history(${history})}"></div>
+</main>
+</body>
+</html>
