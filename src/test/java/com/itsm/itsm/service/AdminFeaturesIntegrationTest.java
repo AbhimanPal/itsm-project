@@ -52,6 +52,13 @@ class AdminFeaturesIntegrationTest {
         return incidentService.reportIncident(asha, "No Wi-Fi", "Library Wi-Fi is down", network, wifi.getId(), 2, 2, 40);
     }
 
+    // A different problem on the same service (so duplicate detection doesn't block it)
+    private Incident reportVpnProblem() {
+        Long network = categoryRepository.findByNameIgnoreCase("Network").orElseThrow().getId();
+        return incidentService.reportIncident(asha, "VPN fails", "Hostel VPN rejects my certificate", network,
+                wifi.getId(), 2, 2, 40);
+    }
+
     private List<Long> skillIdsOf(Technician technician) {
         return technician.getSkills().stream().map(Category::getId).toList();
     }
@@ -125,7 +132,7 @@ class AdminFeaturesIntegrationTest {
         makeRaviUnavailable();
         userService.updateTechnician(meera.getId(), 1, true, false, skillIdsOf(meera));
         Incident first = reportWifiProblem();
-        Incident second = reportWifiProblem();
+        Incident second = reportVpnProblem();
 
         incidentService.assignManually(first.getId(), meera.getId(), admin);
         assertThrows(WorkloadExceededException.class,
@@ -149,7 +156,7 @@ class AdminFeaturesIntegrationTest {
     @Test
     void reportsCountIncidentsPerStatusAndService() {
         reportWifiProblem();
-        reportWifiProblem();
+        reportVpnProblem();
         List<Incident> all = reportService.allIncidents();
 
         assertEquals(2L, reportService.countByStatus(all).get(IncidentStatus.ASSIGNED));

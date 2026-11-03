@@ -1,6 +1,7 @@
 package com.itsm.itsm.repository;
 
 import com.itsm.itsm.model.Employee;
+import com.itsm.itsm.model.ITService;
 import com.itsm.itsm.model.Incident;
 import com.itsm.itsm.model.IncidentStatus;
 import com.itsm.itsm.model.Technician;
@@ -12,6 +13,13 @@ import java.util.List;
 public interface IncidentRepository extends JpaRepository<Incident, Long> {
 
     List<Incident> findAllByOrderByCreatedAtDesc();
+
+    List<Incident> findByStatusIn(Collection<IncidentStatus> statuses);
+
+    List<Incident> findByServiceAndStatusIn(ITService service, Collection<IncidentStatus> statuses);
+
+    // Reports that were linked to this incident as possible duplicates
+    List<Incident> findByDuplicateOfOrderByCreatedAtAsc(Incident original);
 
     List<Incident> findByReporterOrderByCreatedAtDesc(Employee reporter);
 

@@ -17,12 +17,16 @@
         <dt>Status</dt><dd th:text="${incident.status}">ASSIGNED</dd>
         <dt>Priority</dt><dd><span th:class="'pill ' + ${incident.priority}" th:text="${incident.priority} + ' ' + ${incident.priority.label}">P1</span></dd>
         <dt>SLA</dt><dd><span th:class="'sla ' + ${incident.slaStatus}" th:text="${incident.slaStatus.label}">On track</span></dd>
+        <dt th:if="${incident.escalationLevel.name() != 'NONE'}">Escalation</dt>
+        <dd th:if="${incident.escalationLevel.name() != 'NONE'}" th:text="${incident.escalationLevel.label}">Escalated</dd>
         <dt>Respond by</dt><dd th:text="${incident.responseDueAt != null} ? ${#temporals.format(incident.responseDueAt, 'dd MMM, HH:mm')} : '—'">time</dd>
         <dt>Resolve by</dt><dd th:text="${incident.resolutionDueAt != null} ? ${#temporals.format(incident.resolutionDueAt, 'dd MMM, HH:mm')} : '—'">time</dd>
         <dt>Reporter</dt><dd th:text="${incident.reporter.name} + ' (' + ${incident.reporter.department} + ')'">Asha</dd>
         <dt>Service</dt><dd th:text="${incident.service.name}">Service</dd>
         <dt>Category</dt><dd th:text="${incident.category.name}">Category</dd>
         <dt>Impact / urgency / users</dt><dd th:text="${incident.impact} + ' / ' + ${incident.urgency} + ' / ' + ${incident.usersAffected}">3 / 3 / 10</dd>
+        <dt th:if="${incident.duplicateOf != null}">Possible duplicate of</dt>
+        <dd th:if="${incident.duplicateOf != null}" th:text="${incident.duplicateOf.number} + ' · ' + ${incident.duplicateOf.title}">INC0001</dd>
     </dl>
 
     <h2>Description</h2>

@@ -1,9 +1,12 @@
 package com.itsm.itsm.service;
 
 import com.itsm.itsm.assignment.AssignmentService;
+import com.itsm.itsm.duplicate.DuplicateDetector;
+import com.itsm.itsm.duplicate.DuplicateMatch;
 import com.itsm.itsm.event.EventType;
 import com.itsm.itsm.event.IncidentEvent;
 import com.itsm.itsm.event.IncidentEventPublisher;
+import com.itsm.itsm.exception.DuplicateIncidentException;
 import com.itsm.itsm.exception.InvalidInputException;
 import com.itsm.itsm.exception.ServiceNotFoundException;
 import com.itsm.itsm.exception.TechnicianUnavailableException;
@@ -19,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class IncidentService {
@@ -30,6 +34,7 @@ public class IncidentService {
     private final AssignmentService assignmentService;
     private final IncidentEventPublisher eventPublisher;
     private final TechnicianRepository technicianRepository;
+    private final DuplicateDetector duplicateDetector;
 
     // We only know the PriorityStrategy interface, not which class implements it.
     // Spring "injects" the implementation (ScoreBasedPriorityStrategy) here.
@@ -38,7 +43,8 @@ public class IncidentService {
     public IncidentService(IncidentRepository incidentRepository, CategoryRepository categoryRepository,
                            ITServiceRepository serviceRepository, SlaService slaService,
                            AssignmentService assignmentService, IncidentEventPublisher eventPublisher,
-                           PriorityStrategy priorityStrategy, TechnicianRepository technicianRepository) {
+                           PriorityStrategy priorityStrategy, TechnicianRepository technicianRepository,
+                           DuplicateDetector duplicateDetector) {
         this.incidentRepository = incidentRepository;
         this.categoryRepository = categoryRepository;
         this.serviceRepository = serviceRepository;
@@ -47,9 +53,10 @@ public class IncidentService {
         this.eventPublisher = eventPublisher;
         this.priorityStrategy = priorityStrategy;
         this.technicianRepository = technicianRepository;
+        this.duplicateDetector = duplicateDetector;
     }
 
-    // Employee reports a problem: create -> priority -> classify -> SLA -> assign
+    // Employee reports a problem: duplicate check -> create -> priority -> classify -> SLA -> assign
     @Transactional
     public Incident reportIncident(Employee reporter, String title, String description, Long categoryId,
                                    Long serviceId, int impact, int urgency, int usersAffected) {
@@ -58,26 +65,61 @@ public class IncidentService {
         ITService service = serviceRepository.findById(serviceId)
                 .orElseThrow(() -> new ServiceNotFoundException(serviceId));
 
+        // Look for duplicates before saving, so the new report isn't compared with itself.
+        // The same person reporting the same open problem again is blocked.
+        Optional<DuplicateMatch> match = duplicateDetector.findDuplicate(service, title, description);
+        if (match.isPresent() && match.get().original().getReporter().getId().equals(reporter.getId())) {
+            throw new DuplicateIncidentException(match.get().original());
+        }
+
         Incident incident = new Incident(title, description, reporter, category, service,
                 impact, urgency, usersAffected);
         incident.setPriority(priorityStrategy.calculate(impact, urgency, service.getCriticality(), usersAffected));
         incident.changeStatus(IncidentStatus.CLASSIFIED);
         incident.applySla(slaService.findPolicy(service, incident.getPriority()));
+        match.ifPresent(m -> incident.markAsDuplicateOf(m.original()));
         incidentRepository.save(incident); // save first so the incident has an ID for the audit trail
 
         publish(incident, reporter, EventType.CREATED, null, IncidentStatus.CLASSIFIED,
                 "Reported. Category " + category.getName() + ", priority " + incident.getPriority()
                         + ", resolve by " + incident.getResolutionDueAt().toLocalTime().withNano(0) + ".");
+        match.ifPresent(m -> publish(incident, null, EventType.DUPLICATE_DETECTED,
+                IncidentStatus.CLASSIFIED, IncidentStatus.CLASSIFIED,
+                "Possible duplicate of " + m.original().getNumber() + " (" + m.percent()
+                        + "% of words match, same service)."));
 
         try {
-            Technician technician = assignmentService.assign(incident);
+            // Correlation: a duplicate goes to whoever already works on the original, if they have room
+            Technician technician = match.isPresent() ? assignToSameTechnician(incident, match.get().original()) : null;
+            String how;
+            if (technician != null) {
+                how = "same technician as " + match.get().original().getNumber();
+            } else {
+                technician = assignmentService.assign(incident);
+                how = assignmentService.getActiveStrategy().getKey() + " strategy";
+            }
             publish(incident, null, EventType.ASSIGNED, IncidentStatus.CLASSIFIED, IncidentStatus.ASSIGNED,
-                    "Assigned to " + technician.getName() + " ("
-                            + assignmentService.getActiveStrategy().getKey() + " strategy).");
+                    "Assigned to " + technician.getName() + " (" + how + ").");
         } catch (TechnicianUnavailableException e) {
             // Nobody free right now: the incident stays CLASSIFIED and the admin assigns it later
         }
         return incident;
+    }
+
+    // Returns the technician, or null if the original's technician can't take it
+    private Technician assignToSameTechnician(Incident incident, Incident original) {
+        Technician technician = original.getAssignedTechnician();
+        if (technician == null || !technician.isAvailable()
+                || assignmentService.workloadOf(technician) >= technician.getMaxActiveIncidents()) {
+            return null;
+        }
+        incident.assignTo(technician);
+        return technician;
+    }
+
+    // Other reports that were linked to this one as possible duplicates
+    public List<Incident> findDuplicatesOf(Incident original) {
+        return incidentRepository.findByDuplicateOfOrderByCreatedAtAsc(original);
     }
 
     public List<Incident> findByReporter(Employee reporter) {
@@ -197,8 +239,8 @@ public class IncidentService {
         return findIncident(incidentId);
     }
 
-    // For incidents the strategy could not assign (nobody was free): the admin picks someone.
-    // assignTo() only allows this from CLASSIFIED, so an assigned incident can't be "stolen".
+    // The admin picks a technician: for incidents nobody could take (CLASSIFIED), or to
+    // reassign one that nobody acknowledged yet (ASSIGNED). After that it can't be "stolen".
     @Transactional
     public void assignManually(Long incidentId, Long technicianId, Admin admin) {
         Incident incident = findIncident(incidentId);
@@ -211,7 +253,11 @@ public class IncidentService {
             throw new WorkloadExceededException(technician);
         }
         IncidentStatus old = incident.getStatus();
-        incident.assignTo(technician);
+        if (old == IncidentStatus.ASSIGNED) {
+            incident.reassignTo(technician); // e.g. after an escalation reached the admin
+        } else {
+            incident.assignTo(technician);
+        }
         publish(incident, admin, EventType.ASSIGNED, old, IncidentStatus.ASSIGNED,
                 "Assigned to " + technician.getName() + " by the admin.");
     }

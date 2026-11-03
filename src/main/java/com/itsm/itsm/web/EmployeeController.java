@@ -1,6 +1,7 @@
 package com.itsm.itsm.web;
 
 import com.itsm.itsm.audit.AuditRecordRepository;
+import com.itsm.itsm.exception.DuplicateIncidentException;
 import com.itsm.itsm.model.Employee;
 import com.itsm.itsm.model.Incident;
 import com.itsm.itsm.repository.CategoryRepository;
@@ -56,12 +57,25 @@ public class EmployeeController {
             addDropdowns(model);
             return "employee/new-incident";
         }
-        Incident incident = incidentService.reportIncident(currentEmployee(principal), form.getTitle(),
-                form.getDescription(), form.getCategoryId(), form.getServiceId(),
-                form.getImpact(), form.getUrgency(), form.getUsersAffected());
+        Incident incident;
+        try {
+            incident = incidentService.reportIncident(currentEmployee(principal), form.getTitle(),
+                    form.getDescription(), form.getCategoryId(), form.getServiceId(),
+                    form.getImpact(), form.getUrgency(), form.getUsersAffected());
+        } catch (DuplicateIncidentException e) {
+            // Show the message at the top of the form instead of an error page
+            result.reject("duplicate", e.getMessage());
+            addDropdowns(model);
+            return "employee/new-incident";
+        }
 
-        redirect.addFlashAttribute("message", incident.getNumber() + " was reported with priority "
-                + incident.getPriority() + " (" + incident.getPriority().getLabel() + ").");
+        String message = incident.getNumber() + " was reported with priority "
+                + incident.getPriority() + " (" + incident.getPriority().getLabel() + ").";
+        if (incident.getDuplicateOf() != null) {
+            message += " It looks like " + incident.getDuplicateOf().getNumber()
+                    + ", which is already being handled, so we linked them.";
+        }
+        redirect.addFlashAttribute("message", message);
         return "redirect:/employee/incidents";
     }
 

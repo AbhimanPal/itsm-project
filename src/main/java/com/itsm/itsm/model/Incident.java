@@ -35,6 +35,11 @@ public class Incident {
     @ManyToOne
     private Technician assignedTechnician;
 
+    // Association to another incident: set when duplicate detection thinks
+    // this report is about the same problem as an earlier open incident
+    @ManyToOne
+    private Incident duplicateOf;
+
     private int impact;          // 1-3
     private int urgency;         // 1-3
     private int usersAffected;
@@ -63,6 +68,16 @@ public class Incident {
     // When the technician actually responded and resolved
     private LocalDateTime acknowledgedAt;
     private LocalDateTime resolvedAt;
+
+    // Filled in by the SLA scheduler, so each warning and breach is only reported once
+    private LocalDateTime slaWarningSentAt;
+    private LocalDateTime slaBreachedAt;
+
+    // Escalation when nobody acknowledges the incident in time.
+    // Stored as null for incidents saved before this existed; the getter turns that into NONE.
+    @Enumerated(EnumType.STRING)
+    private EscalationLevel escalationLevel;
+    private LocalDateTime escalatedAt;
 
     // Feedback from the reporter after the fix: rating 1-5 and a comment
     private Integer feedbackRating;
@@ -118,6 +133,19 @@ public class Incident {
         assignedTechnician = technician;
     }
 
+    // Hand the incident to another technician while it still waits to be acknowledged
+    // (used by escalation and by the admin). Once someone acknowledged it, it stays theirs.
+    public void reassignTo(Technician technician) {
+        if (status != IncidentStatus.ASSIGNED) {
+            throw new InvalidStateTransitionException(status, IncidentStatus.ASSIGNED);
+        }
+        assignedTechnician = technician;
+    }
+
+    public void markAsDuplicateOf(Incident original) {
+        duplicateOf = original;
+    }
+
     public void resolve(String resolutionText) {
         changeStatus(IncidentStatus.RESOLVED);
         resolution = resolutionText;
@@ -158,6 +186,55 @@ public class Incident {
         return SlaStatus.ON_TRACK;
     }
 
+    // ----- SLA monitoring (used by the scheduler) -----
+
+    public boolean needsSlaWarning(LocalDateTime now) {
+        return slaWarningSentAt == null && getSlaStatus(now) == SlaStatus.AT_RISK;
+    }
+
+    public void markSlaWarningSent(LocalDateTime now) {
+        slaWarningSentAt = now;
+    }
+
+    public boolean needsBreachRecord(LocalDateTime now) {
+        return slaBreachedAt == null && getSlaStatus(now) == SlaStatus.BREACHED;
+    }
+
+    public void recordBreach(LocalDateTime now) {
+        slaBreachedAt = now;
+    }
+
+    // Which deadline was missed, for the audit trail and the notification
+    public String describeBreach() {
+        boolean respondedLate = acknowledgedAt == null || acknowledgedAt.isAfter(responseDueAt);
+        return respondedLate ? "response deadline missed" : "resolution deadline missed";
+    }
+
+    // ----- Escalation -----
+
+    public EscalationLevel getEscalationLevel() {
+        return escalationLevel == null ? EscalationLevel.NONE : escalationLevel;
+    }
+
+    public void escalate(EscalationLevel level, LocalDateTime now) {
+        escalationLevel = level;
+        escalatedAt = now;
+    }
+
+    // When the next escalation step is due if still nobody acknowledges it:
+    // first at the response deadline, then one more response window later.
+    // null = nothing left to escalate to.
+    public LocalDateTime getNextEscalationDueAt() {
+        if (responseDueAt == null) {
+            return null;
+        }
+        return switch (getEscalationLevel()) {
+            case NONE -> responseDueAt;
+            case TEAM_LEAD -> escalatedAt.plus(Duration.between(createdAt, responseDueAt));
+            case ADMIN -> null;
+        };
+    }
+
     // Shown to users as INC0001, INC0002, ...
     public String getNumber() {
         return id == null ? "INC(new)" : String.format("INC%04d", id);
@@ -189,6 +266,10 @@ public class Incident {
 
     public Technician getAssignedTechnician() {
         return assignedTechnician;
+    }
+
+    public Incident getDuplicateOf() {
+        return duplicateOf;
     }
 
     public int getImpact() {
@@ -241,6 +322,18 @@ public class Incident {
 
     public LocalDateTime getResolvedAt() {
         return resolvedAt;
+    }
+
+    public LocalDateTime getSlaWarningSentAt() {
+        return slaWarningSentAt;
+    }
+
+    public LocalDateTime getSlaBreachedAt() {
+        return slaBreachedAt;
+    }
+
+    public LocalDateTime getEscalatedAt() {
+        return escalatedAt;
     }
 
     public Integer getFeedbackRating() {

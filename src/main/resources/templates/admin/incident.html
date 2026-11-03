@@ -15,7 +15,10 @@
     <dl class="facts">
         <dt>Status</dt><dd th:text="${incident.status}">ASSIGNED</dd>
         <dt>Priority</dt><dd><span th:class="'pill ' + ${incident.priority}" th:text="${incident.priority} + ' ' + ${incident.priority.label}">P1</span></dd>
-        <dt>SLA</dt><dd><span th:class="'sla ' + ${incident.slaStatus}" th:text="${incident.slaStatus.label}">On track</span></dd>
+        <dt>SLA</dt><dd><span th:class="'sla ' + ${incident.slaStatus}" th:text="${incident.slaStatus.label}">On track</span>
+            <span class="muted" th:if="${incident.slaBreachedAt != null}"
+                  th:text="'· violation recorded ' + ${#temporals.format(incident.slaBreachedAt, 'dd MMM, HH:mm')}">· recorded</span></dd>
+        <dt>Escalation</dt><dd th:text="${incident.escalationLevel.label}">Not escalated</dd>
         <dt>Respond by</dt><dd th:text="${incident.responseDueAt != null} ? ${#temporals.format(incident.responseDueAt, 'dd MMM, HH:mm')} : '—'">time</dd>
         <dt>Resolve by</dt><dd th:text="${incident.resolutionDueAt != null} ? ${#temporals.format(incident.resolutionDueAt, 'dd MMM, HH:mm')} : '—'">time</dd>
         <dt>Reporter</dt><dd th:text="${incident.reporter.name} + ' (' + ${incident.reporter.department} + ')'">Asha</dd>
@@ -23,12 +26,16 @@
         <dt>Service</dt><dd th:text="${incident.service.name}">Service</dd>
         <dt>Category</dt><dd th:text="${incident.category.name}">Category</dd>
         <dt>Impact / urgency / users</dt><dd th:text="${incident.impact} + ' / ' + ${incident.urgency} + ' / ' + ${incident.usersAffected}">3 / 3 / 10</dd>
+        <dt th:if="${incident.duplicateOf != null}">Possible duplicate of</dt>
+        <dd th:if="${incident.duplicateOf != null}"><a th:href="@{/admin/incidents/{id}(id=${incident.duplicateOf.id})}"
+            th:text="${incident.duplicateOf.number} + ' · ' + ${incident.duplicateOf.title}">INC0001</a></dd>
     </dl>
 
-    <!-- Only incidents that nobody could take yet can be assigned here -->
-    <th:block th:if="${incident.status.name() == 'CLASSIFIED'}">
-        <h2>Assign a technician</h2>
-        <p class="muted">No technician was free when this was reported.</p>
+    <!-- Unassigned incidents can be assigned; assigned ones can be moved until someone acknowledges them -->
+    <th:block th:if="${incident.status.name() == 'CLASSIFIED' or incident.status.name() == 'ASSIGNED'}">
+        <h2 th:text="${incident.status.name() == 'CLASSIFIED'} ? 'Assign a technician' : 'Reassign'">Assign a technician</h2>
+        <p class="muted" th:if="${incident.status.name() == 'CLASSIFIED'}">No technician was free when this was reported.</p>
+        <p class="muted" th:unless="${incident.status.name() == 'CLASSIFIED'}">Not acknowledged yet, so it can still go to someone else.</p>
         <div class="row">
             <form th:action="@{/admin/incidents/{id}/assign(id=${incident.id})}" method="post">
                 <label>Technician
@@ -39,11 +46,22 @@
                 </label>
                 <button class="primary" type="submit">Assign</button>
             </form>
-            <form th:action="@{/admin/incidents/{id}/auto-assign(id=${incident.id})}" method="post">
+            <form th:if="${incident.status.name() == 'CLASSIFIED'}"
+                  th:action="@{/admin/incidents/{id}/auto-assign(id=${incident.id})}" method="post">
                 <label>&nbsp;</label>
                 <button type="submit">Try automatic assignment again</button>
             </form>
         </div>
+    </th:block>
+
+    <th:block th:unless="${duplicates.isEmpty()}">
+        <h2>Linked duplicate reports</h2>
+        <ul>
+            <li th:each="d : ${duplicates}">
+                <a th:href="@{/admin/incidents/{id}(id=${d.id})}" th:text="${d.number}">INC0002</a>
+                <span th:text="'· ' + ${d.title} + ' · reported by ' + ${d.reporter.name} + ' · ' + ${d.status}">details</span>
+            </li>
+        </ul>
     </th:block>
 
     <h2>Description</h2>

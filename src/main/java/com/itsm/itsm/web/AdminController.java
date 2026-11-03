@@ -92,6 +92,7 @@ public class AdminController {
         model.addAttribute("incident", incident);
         model.addAttribute("history", auditRecordRepository.findByIncidentOrderByTimestampAscIdAsc(incident));
         model.addAttribute("technicians", technicianRepository.findAll(Sort.by("name")));
+        model.addAttribute("duplicates", incidentService.findDuplicatesOf(incident));
         return "admin/incident";
     }
 

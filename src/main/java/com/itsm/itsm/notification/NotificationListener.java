@@ -2,9 +2,12 @@ package com.itsm.itsm.notification;
 
 import com.itsm.itsm.event.IncidentEvent;
 import com.itsm.itsm.event.IncidentListener;
+import com.itsm.itsm.model.Admin;
+import com.itsm.itsm.model.EscalationLevel;
 import com.itsm.itsm.model.Incident;
 import com.itsm.itsm.model.IncidentStatus;
 import com.itsm.itsm.model.User;
+import com.itsm.itsm.repository.AdminRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -15,9 +18,11 @@ import java.util.List;
 public class NotificationListener implements IncidentListener {
 
     private final List<NotificationChannel> channels;
+    private final AdminRepository adminRepository;
 
-    public NotificationListener(List<NotificationChannel> channels) {
+    public NotificationListener(List<NotificationChannel> channels, AdminRepository adminRepository) {
         this.channels = channels;
+        this.adminRepository = adminRepository;
     }
 
     @Override
@@ -38,6 +43,26 @@ public class NotificationListener implements IncidentListener {
             case FEEDBACK_GIVEN -> notify(technician, incident, "Feedback on " + number + ": " + event.getDescription());
             case NOTE_ADDED -> {
                 // Investigation notes are only recorded in the audit trail
+            }
+            case SLA_WARNING -> notify(technician, incident, "SLA warning: " + number + " " + event.getDescription());
+            case SLA_BREACHED -> {
+                notify(technician, incident, number + ": " + event.getDescription());
+                notifyAdmins(incident, number + ": " + event.getDescription());
+            }
+            case DUPLICATE_DETECTED -> {
+                Incident original = incident.getDuplicateOf();
+                notify(reporter, incident, number + " looks like " + original.getNumber()
+                        + ", which is already being handled. We linked them.");
+                notify(original.getAssignedTechnician(), original, number + " was reported by "
+                        + reporter.getName() + " and looks like a duplicate of " + original.getNumber() + ".");
+            }
+            case ESCALATED -> {
+                if (incident.getEscalationLevel() == EscalationLevel.TEAM_LEAD) {
+                    notify(technician, incident, number + " (" + incident.getPriority()
+                            + ") was escalated to you: it was not acknowledged in time.");
+                } else {
+                    notifyAdmins(incident, number + " needs attention: " + event.getDescription());
+                }
             }
         }
     }
@@ -60,6 +85,12 @@ public class NotificationListener implements IncidentListener {
             notify(technician, incident, number + " was confirmed and closed by the reporter.");
         } else if (to == IncidentStatus.ACKNOWLEDGED || to == IncidentStatus.IN_PROGRESS) {
             notify(reporter, incident, number + " is now " + to + ".");
+        }
+    }
+
+    private void notifyAdmins(Incident incident, String message) {
+        for (Admin admin : adminRepository.findAll()) {
+            notify(admin, incident, message);
         }
     }
 

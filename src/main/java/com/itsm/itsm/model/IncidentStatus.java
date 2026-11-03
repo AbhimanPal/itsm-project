@@ -18,6 +18,10 @@ public enum IncidentStatus {
     // Statuses where a technician is actively responsible. Used to count workload.
     public static final List<IncidentStatus> WORKING = List.of(ASSIGNED, ACKNOWLEDGED, IN_PROGRESS, AWAITING_INFO);
 
+    // Statuses where the SLA clock is still running. Used by the SLA scheduler.
+    public static final List<IncidentStatus> OPEN = List.of(NEW, CLASSIFIED, ASSIGNED, ACKNOWLEDGED,
+            IN_PROGRESS, AWAITING_INFO);
+
     public boolean canMoveTo(IncidentStatus next) {
         return switch (this) {
             case NEW -> next == CLASSIFIED;

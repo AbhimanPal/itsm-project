@@ -10,6 +10,7 @@
 <main class="card">
     <h1>Report an incident</h1>
     <form th:action="@{/employee/incidents}" th:object="${form}" method="post">
+        <p class="alert error" th:each="e : ${#fields.globalErrors()}" th:text="${e}">Already reported</p>
         <label>Title <input th:field="*{title}" placeholder="e.g. Payment app shows error 500"></label>
         <p class="field-error" th:errors="*{title}"></p>
 

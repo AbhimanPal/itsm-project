@@ -20,6 +20,8 @@
         <dt>Resolve by</dt><dd th:text="${incident.resolutionDueAt != null} ? ${#temporals.format(incident.resolutionDueAt, 'dd MMM, HH:mm')} : '—'">time</dd>
         <dt>Service</dt><dd th:text="${incident.service.name}">Service</dd>
         <dt>Category</dt><dd th:text="${incident.category.name}">Category</dd>
+        <dt th:if="${incident.duplicateOf != null}">Possible duplicate of</dt>
+        <dd th:if="${incident.duplicateOf != null}" th:text="${incident.duplicateOf.number} + ' · ' + ${incident.duplicateOf.title}">INC0001</dd>
     </dl>
 
     <h2>Description</h2>
