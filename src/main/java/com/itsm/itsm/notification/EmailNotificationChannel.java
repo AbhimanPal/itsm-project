@@ -1,5 +1,7 @@
 package com.itsm.itsm.notification;
 
+import com.itsm.itsm.exception.InvalidInputException;
+import com.itsm.itsm.exception.NetworkFailureException;
 import com.itsm.itsm.model.Incident;
 import com.itsm.itsm.model.User;
 import org.slf4j.Logger;
@@ -60,6 +62,29 @@ public class EmailNotificationChannel implements NotificationChannel {
         // Talking to Gmail takes a second or two, so send in the background
         // and let the page load straight away
         CompletableFuture.runAsync(() -> deliver(mail));
+    }
+
+    // Admin's "Send test email" button. Unlike send(), this waits for Gmail's answer,
+    // so a problem is shown to the admin straight away instead of only in the log.
+    // Returns the address the email went to.
+    public String sendTest(User admin) {
+        if (!enabled) {
+            throw new InvalidInputException("Email is switched off: set MAIL_USERNAME and MAIL_PASSWORD "
+                    + "in IntelliJ's run configuration and restart the app.");
+        }
+        String to = redirectTo.isBlank() ? admin.getEmail() : redirectTo;
+        SimpleMailMessage mail = new SimpleMailMessage();
+        mail.setFrom(from);
+        mail.setTo(to);
+        mail.setSubject("[I-ITSM] Test email");
+        mail.setText("Hello " + admin.getName() + ",\n\nEmail from I-ITSM is working.\n\n-- I-ITSM");
+        try {
+            mailSender.send(mail);
+        } catch (MailException e) {
+            throw new NetworkFailureException("Could not send the test email through Gmail: " + e.getMessage(), e);
+        }
+        log.info("[EMAIL sent] To: {} | {}", to, mail.getSubject());
+        return to;
     }
 
     private void deliver(SimpleMailMessage mail) {

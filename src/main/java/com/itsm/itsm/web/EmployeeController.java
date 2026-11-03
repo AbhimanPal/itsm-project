@@ -1,5 +1,6 @@
 package com.itsm.itsm.web;
 
+import com.itsm.itsm.exception.InvalidLoginException;
 import com.itsm.itsm.audit.AuditRecordRepository;
 import com.itsm.itsm.exception.DuplicateIncidentException;
 import com.itsm.itsm.model.Employee;
@@ -115,7 +116,8 @@ public class EmployeeController {
     }
 
     private Employee currentEmployee(Principal principal) {
-        return employeeRepository.findByEmail(principal.getName()).orElseThrow();
+        return employeeRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new InvalidLoginException(principal.getName()));
     }
 
     private void addDropdowns(Model model) {

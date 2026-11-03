@@ -1,5 +1,6 @@
 package com.itsm.itsm.web;
 
+import com.itsm.itsm.exception.InvalidLoginException;
 import com.itsm.itsm.model.User;
 import com.itsm.itsm.notification.Notification;
 import com.itsm.itsm.notification.NotificationRepository;
@@ -27,7 +28,8 @@ public class NotificationController {
     @GetMapping("/notifications")
     @Transactional
     public String notifications(Principal principal, Model model) {
-        User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+        User user = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new InvalidLoginException(principal.getName()));
         List<Notification> notifications = notificationRepository.findByRecipientOrderByCreatedAtDescIdDesc(user);
 
         // Show which ones are new on this visit, then mark them all as seen

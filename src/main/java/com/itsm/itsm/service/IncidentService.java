@@ -6,6 +6,7 @@ import com.itsm.itsm.duplicate.DuplicateMatch;
 import com.itsm.itsm.event.EventType;
 import com.itsm.itsm.event.IncidentEvent;
 import com.itsm.itsm.event.IncidentEventPublisher;
+import com.itsm.itsm.exception.DatabaseFailureException;
 import com.itsm.itsm.exception.DuplicateIncidentException;
 import com.itsm.itsm.exception.InvalidInputException;
 import com.itsm.itsm.exception.ServiceNotFoundException;
@@ -13,11 +14,11 @@ import com.itsm.itsm.exception.TechnicianUnavailableException;
 import com.itsm.itsm.exception.UnauthorizedOperationException;
 import com.itsm.itsm.exception.WorkloadExceededException;
 import com.itsm.itsm.model.*;
-import com.itsm.itsm.priority.PriorityStrategy;
 import com.itsm.itsm.repository.CategoryRepository;
 import com.itsm.itsm.repository.ITServiceRepository;
 import com.itsm.itsm.repository.IncidentRepository;
 import com.itsm.itsm.repository.TechnicianRepository;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,28 +36,25 @@ public class IncidentService {
     private final IncidentEventPublisher eventPublisher;
     private final TechnicianRepository technicianRepository;
     private final DuplicateDetector duplicateDetector;
-
-    // We only know the PriorityStrategy interface, not which class implements it.
-    // Spring "injects" the implementation (ScoreBasedPriorityStrategy) here.
-    private final PriorityStrategy priorityStrategy;
+    private final IncidentFactory incidentFactory;
 
     public IncidentService(IncidentRepository incidentRepository, CategoryRepository categoryRepository,
                            ITServiceRepository serviceRepository, SlaService slaService,
                            AssignmentService assignmentService, IncidentEventPublisher eventPublisher,
-                           PriorityStrategy priorityStrategy, TechnicianRepository technicianRepository,
-                           DuplicateDetector duplicateDetector) {
+                           TechnicianRepository technicianRepository,
+                           DuplicateDetector duplicateDetector, IncidentFactory incidentFactory) {
         this.incidentRepository = incidentRepository;
         this.categoryRepository = categoryRepository;
         this.serviceRepository = serviceRepository;
         this.slaService = slaService;
         this.assignmentService = assignmentService;
         this.eventPublisher = eventPublisher;
-        this.priorityStrategy = priorityStrategy;
         this.technicianRepository = technicianRepository;
         this.duplicateDetector = duplicateDetector;
+        this.incidentFactory = incidentFactory;
     }
 
-    // Employee reports a problem: duplicate check -> create -> priority -> classify -> SLA -> assign
+    // Employee reports a problem: duplicate check -> create (factory) -> save -> assign
     @Transactional
     public Incident reportIncident(Employee reporter, String title, String description, Long categoryId,
                                    Long serviceId, int impact, int urgency, int usersAffected) {
@@ -72,13 +70,16 @@ public class IncidentService {
             throw new DuplicateIncidentException(match.get().original());
         }
 
-        Incident incident = new Incident(title, description, reporter, category, service,
+        // Factory pattern: IncidentFactory builds it with priority, CLASSIFIED status and SLA deadlines
+        Incident incident = incidentFactory.create(reporter, title, description, category, service,
                 impact, urgency, usersAffected);
-        incident.setPriority(priorityStrategy.calculate(impact, urgency, service.getCriticality(), usersAffected));
-        incident.changeStatus(IncidentStatus.CLASSIFIED);
-        incident.applySla(slaService.findPolicy(service, incident.getPriority()));
         match.ifPresent(m -> incident.markAsDuplicateOf(m.original()));
-        incidentRepository.save(incident); // save first so the incident has an ID for the audit trail
+        try {
+            incidentRepository.save(incident); // save first so the incident has an ID for the audit trail
+        } catch (DataAccessException e) {
+            // DataAccessException is Spring's general "the database said no" error
+            throw new DatabaseFailureException("Your incident could not be saved", e);
+        }
 
         publish(incident, reporter, EventType.CREATED, null, IncidentStatus.CLASSIFIED,
                 "Reported. Category " + category.getName() + ", priority " + incident.getPriority()
@@ -275,6 +276,18 @@ public class IncidentService {
     }
 
     // ----- Helpers -----
+
+    // Admin changes the priority by hand, e.g. after learning the problem is worse than reported
+    @Transactional
+    public void changePriority(Long incidentId, Priority newPriority, String reason, Admin admin) {
+        Incident incident = findIncident(incidentId);
+        String why = requireText(reason, "The reason");
+        Priority old = incident.getPriority();
+        incident.changePriority(newPriority, slaService.findPolicy(incident.getService(), newPriority));
+        publish(incident, admin, EventType.PRIORITY_CHANGED, incident.getStatus(), incident.getStatus(),
+                "Priority " + old + " -> " + newPriority + ": " + why + ". Now resolve by "
+                        + incident.getResolutionDueAt().toLocalTime().withNano(0) + ".");
+    }
 
     private Incident findIncident(Long incidentId) {
         return incidentRepository.findById(incidentId)

@@ -54,6 +54,23 @@
         </div>
     </th:block>
 
+    <!-- The admin can override the calculated priority while the incident is open -->
+    <th:block th:if="${incident.status.open}">
+        <h2>Change priority</h2>
+        <form class="row bottom" th:action="@{/admin/incidents/{id}/priority(id=${incident.id})}" method="post">
+            <label>New priority
+                <select name="priority">
+                    <option th:each="p : ${priorities}" th:value="${p}" th:text="${p} + ' ' + ${p.label}"
+                            th:selected="${p == incident.priority}">P1</option>
+                </select>
+            </label>
+            <label>Reason
+                <input type="text" name="reason" required maxlength="200" placeholder="e.g. whole floor affected">
+            </label>
+            <button class="primary" type="submit">Change priority</button>
+        </form>
+    </th:block>
+
     <th:block th:unless="${duplicates.isEmpty()}">
         <h2>Linked duplicate reports</h2>
         <ul>

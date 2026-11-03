@@ -10,6 +10,10 @@
     <h1>Something went wrong</h1>
     <p class="alert error" th:text="${message}">Message</p>
     <p><a th:href="@{/}">Back to home</a></p>
+    <!-- Also shown for InvalidLoginException, where "home" would fail again, so offer a way out -->
+    <form th:action="@{/logout}" method="post">
+        <button type="submit">Log out</button>
+    </form>
 </main>
 </body>
 </html>

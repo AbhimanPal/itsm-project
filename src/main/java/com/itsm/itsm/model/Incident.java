@@ -1,5 +1,6 @@
 package com.itsm.itsm.model;
 
+import com.itsm.itsm.exception.InvalidInputException;
 import com.itsm.itsm.exception.InvalidStateTransitionException;
 import jakarta.persistence.*;
 
@@ -126,6 +127,21 @@ public class Incident {
     public void applySla(SlaPolicy policy) {
         responseDueAt = createdAt.plusMinutes(policy.getResponseMinutes());
         resolutionDueAt = createdAt.plusMinutes(policy.getResolutionMinutes());
+    }
+
+    // The admin overrides the calculated priority. The deadlines are worked out again
+    // from the creation time with the new priority's SLA rule, and the 80% warning
+    // can be sent again for the new deadlines. A violation already recorded stays recorded.
+    public void changePriority(Priority newPriority, SlaPolicy policy) {
+        if (!status.isOpen()) {
+            throw new InvalidInputException("Only open incidents can change priority; this one is " + status + ".");
+        }
+        if (newPriority == priority) {
+            throw new InvalidInputException("The incident already has priority " + priority + ".");
+        }
+        priority = newPriority;
+        applySla(policy);
+        slaWarningSentAt = null;
     }
 
     public void assignTo(Technician technician) {

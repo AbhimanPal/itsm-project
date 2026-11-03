@@ -15,7 +15,9 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/register", "/css/**", "/error", "/h2-console/**").permitAll()
+                        .requestMatchers("/login", "/register", "/css/**", "/error").permitAll()
+                        // The database browser shows everything (even password hashes), so admins only
+                        .requestMatchers("/h2-console/**").hasRole("ADMIN")
                         .requestMatchers("/employee/**").hasRole("EMPLOYEE")
                         .requestMatchers("/technician/**").hasRole("TECHNICIAN")
                         .requestMatchers("/admin/**").hasRole("ADMIN")

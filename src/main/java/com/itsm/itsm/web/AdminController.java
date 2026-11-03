@@ -1,9 +1,11 @@
 package com.itsm.itsm.web;
 
+import com.itsm.itsm.exception.InvalidLoginException;
 import com.itsm.itsm.assignment.AssignmentService;
 import com.itsm.itsm.audit.AuditRecordRepository;
 import com.itsm.itsm.exception.ItsmException;
 import com.itsm.itsm.model.*;
+import com.itsm.itsm.notification.EmailNotificationChannel;
 import com.itsm.itsm.report.ReportService;
 import com.itsm.itsm.repository.CategoryRepository;
 import com.itsm.itsm.repository.ITServiceRepository;
@@ -32,11 +34,13 @@ public class AdminController {
     private final ITServiceRepository serviceRepository;
     private final TechnicianRepository technicianRepository;
     private final UserRepository userRepository;
+    private final EmailNotificationChannel emailChannel;
 
     public AdminController(AssignmentService assignmentService, AuditRecordRepository auditRecordRepository,
                            ReportService reportService, IncidentService incidentService,
                            CategoryRepository categoryRepository, ITServiceRepository serviceRepository,
-                           TechnicianRepository technicianRepository, UserRepository userRepository) {
+                           TechnicianRepository technicianRepository, UserRepository userRepository,
+                           EmailNotificationChannel emailChannel) {
         this.assignmentService = assignmentService;
         this.auditRecordRepository = auditRecordRepository;
         this.reportService = reportService;
@@ -45,6 +49,7 @@ public class AdminController {
         this.serviceRepository = serviceRepository;
         this.technicianRepository = technicianRepository;
         this.userRepository = userRepository;
+        this.emailChannel = emailChannel;
     }
 
     // Dashboard: incident overview, technician workload, incidents per service
@@ -71,6 +76,18 @@ public class AdminController {
         return "redirect:/admin";
     }
 
+    @PostMapping("/test-email")
+    public String testEmail(Principal principal, RedirectAttributes redirect) {
+        try {
+            String to = emailChannel.sendTest(currentAdmin(principal));
+            redirect.addFlashAttribute("message", "Test email sent to " + to + ".");
+        } catch (ItsmException e) {
+            // InvalidInputException (email switched off) or NetworkFailureException (Gmail unreachable)
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/admin";
+    }
+
     // ----- All incidents, with filters -----
 
     // Spring fills "search" from the URL's ?status=...&priority=... values
@@ -93,6 +110,7 @@ public class AdminController {
         model.addAttribute("history", auditRecordRepository.findByIncidentOrderByTimestampAscIdAsc(incident));
         model.addAttribute("technicians", technicianRepository.findAll(Sort.by("name")));
         model.addAttribute("duplicates", incidentService.findDuplicatesOf(incident));
+        model.addAttribute("priorities", Priority.values());
         return "admin/incident";
     }
 
@@ -102,6 +120,18 @@ public class AdminController {
         try {
             incidentService.assignManually(id, technicianId, currentAdmin(principal));
             redirect.addFlashAttribute("message", "Technician assigned.");
+        } catch (ItsmException e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/admin/incidents/" + id;
+    }
+
+    @PostMapping("/incidents/{id}/priority")
+    public String changePriority(@PathVariable Long id, @RequestParam Priority priority, @RequestParam String reason,
+                                 Principal principal, RedirectAttributes redirect) {
+        try {
+            incidentService.changePriority(id, priority, reason, currentAdmin(principal));
+            redirect.addFlashAttribute("message", "Priority changed to " + priority + ". The SLA deadlines were updated.");
         } catch (ItsmException e) {
             redirect.addFlashAttribute("error", e.getMessage());
         }
@@ -128,6 +158,7 @@ public class AdminController {
     }
 
     private Admin currentAdmin(Principal principal) {
-        return (Admin) userRepository.findByEmail(principal.getName()).orElseThrow();
+        return (Admin) userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new InvalidLoginException(principal.getName()));
     }
 }

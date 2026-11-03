@@ -56,6 +56,12 @@ public class NotificationListener implements IncidentListener {
                 notify(original.getAssignedTechnician(), original, number + " was reported by "
                         + reporter.getName() + " and looks like a duplicate of " + original.getNumber() + ".");
             }
+            case PRIORITY_CHANGED -> {
+                String message = number + " now has priority " + incident.getPriority() + " "
+                        + incident.getPriority().getLabel() + ". " + event.getDescription();
+                notify(reporter, incident, message);
+                notify(technician, incident, message);
+            }
             case ESCALATED -> {
                 if (incident.getEscalationLevel() == EscalationLevel.TEAM_LEAD) {
                     notify(technician, incident, number + " (" + incident.getPriority()

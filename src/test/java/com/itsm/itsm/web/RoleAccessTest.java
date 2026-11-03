@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 // Authorization tests: MockMvc sends fake browser requests, and @WithMockUser
 // pretends someone with that role is logged in.
@@ -70,5 +71,20 @@ class RoleAccessTest {
     @WithMockUser(username = "asha@itsm.local", roles = "EMPLOYEE")
     void employeeCannotReadChartData() throws Exception {
         mvc.perform(get("/admin/api/stats")).andExpect(status().isForbidden());
+    }
+
+    // Logged in as someone who isn't in the database (e.g. after it was reset): InvalidLoginException page
+    @Test
+    @WithMockUser(username = "ghost@itsm.local", roles = "EMPLOYEE")
+    void unknownLoggedInUserGetsFriendlyErrorPage() throws Exception {
+        mvc.perform(get("/employee/incidents"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("problem"));
+    }
+
+    @Test
+    @WithMockUser(username = "asha@itsm.local", roles = "EMPLOYEE")
+    void employeeCannotOpenDatabaseConsole() throws Exception {
+        mvc.perform(get("/h2-console")).andExpect(status().isForbidden());
     }
 }

@@ -102,3 +102,7 @@ td.bar-cell { width: 40%; }
 .charts .full { grid-column: 1 / -1; }
 .chart-box { position: relative; height: 280px; }  /* Chart.js sizes each chart to this box */
 @media (max-width: 800px) { .charts { grid-template-columns: 1fr; } }
+
+/* A one-line form: fields share the width, the button sits level with them */
+.row.bottom { align-items: flex-end; }
+.row.bottom label { flex: 1; }

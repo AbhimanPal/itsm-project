@@ -107,6 +107,12 @@
         </label>
         <button class="primary" type="submit">Save strategy</button>
     </form>
+
+    <h2>Email</h2>
+    <p class="muted">Sends one email straight away and shows the result here, to check the Gmail settings.</p>
+    <form th:action="@{/admin/test-email}" method="post">
+        <button type="submit">Send test email</button>
+    </form>
 </main>
 </body>
 </html>

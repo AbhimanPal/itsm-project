@@ -1,5 +1,6 @@
 package com.itsm.itsm.web;
 
+import com.itsm.itsm.exception.InvalidLoginException;
 import com.itsm.itsm.assignment.AssignmentService;
 import com.itsm.itsm.audit.AuditRecordRepository;
 import com.itsm.itsm.model.Incident;
@@ -95,6 +96,7 @@ public class TechnicianController {
     }
 
     private Technician currentTechnician(Principal principal) {
-        return technicianRepository.findByEmail(principal.getName()).orElseThrow();
+        return technicianRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new InvalidLoginException(principal.getName()));
     }
 }

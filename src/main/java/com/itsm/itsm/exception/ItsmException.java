@@ -8,4 +8,10 @@ public class ItsmException extends RuntimeException {
     public ItsmException(String message) {
         super(message);
     }
+
+    // "cause" is the original low-level error (e.g. from the database or the mail server).
+    // We keep it inside our exception so the full details still appear in the log.
+    public ItsmException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

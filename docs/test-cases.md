@@ -2,7 +2,7 @@
 
 All cases below are automated JUnit 5 tests. Run them all in IntelliJ by right-clicking
 `src/test/java` → **Run 'All Tests'**, or in a terminal with `./mvnw test`.
-The project has **69 automated tests**; the 26 below are the documented cases for the report.
+The project has **78 automated tests**; the 31 below are the documented cases for the report.
 Every one passes (last run: 3 Nov 2026).
 
 Unit tests check one class on its own. Integration tests (`@SpringBootTest`) start the
@@ -37,14 +37,19 @@ MockMvc, which sends fake browser requests as a pretend logged-in user (`@WithMo
 | TC24 | Authorization | Not logged in | Open `/admin/incidents` | Redirect to `/login` | `RoleAccessTest.notLoggedInIsSentToLoginPage` |
 | TC25 | Authorization | Employee opens admin page | Employee opens `/admin/users` and `/admin/api/stats` | 403 Forbidden | `RoleAccessTest.employeeCannotOpenAdminPages`, `employeeCannotReadChartData` |
 | TC26 | Authorization | Technician acts on someone else's incident | Wi-Fi incident is assigned to Ravi; Meera tries to acknowledge it | `UnauthorizedOperationException` | `IncidentWorkflowIntegrationTest.otherTechnicianCannotActOnIncident` |
+| TC27 | Normal | Factory builds a complete incident | `IncidentFactory.create` with impact 3, urgency 3, criticality 2 | Title trimmed, P1, CLASSIFIED, deadlines from the SLA rule | `IncidentFactoryTest.createsAClassifiedIncidentWithPriorityAndDeadlines` |
+| TC28 | Invalid input | Blank incident title or description | Title "   ", then description null | `InvalidIncidentException` | `IncidentFactoryTest.blankTitleOrDescriptionIsRejected` |
+| TC29 | Business rule | Admin raises priority | Wi-Fi incident P3 → P1 with a reason | Deadlines become created + 5 / 30 min, `PRIORITY_CHANGED` in audit, reporter notified | `PriorityChangeIntegrationTest.raisingPriorityShortensDeadlinesAndTellsEveryone` |
+| TC30 | Exception | Mail server unreachable | "Send test email" with a mail sender that fails | `NetworkFailureException` | `EmailNotificationChannelTest.gmailUnreachableGivesNetworkFailure` |
+| TC31 | Authorization | Logged in as a deleted user | Session for `ghost@itsm.local`, open `/employee/incidents` | Friendly error page (`InvalidLoginException`) with Log out | `RoleAccessTest.unknownLoggedInUserGetsFriendlyErrorPage` |
 
 ## Coverage by type
 
 | Type | Cases |
 |---|---|
-| Normal | TC01, TC08, TC12, TC13, TC18 |
+| Normal | TC01, TC08, TC12, TC13, TC18, TC27 |
 | Boundary | TC02, TC03, TC04, TC05, TC20 |
-| Invalid input | TC06, TC07, TC23 |
-| Exception | TC09, TC11, TC16, TC22 |
-| Authorization | TC24, TC25, TC26 |
-| Business rule | TC10, TC14, TC15, TC17, TC19, TC21 |
+| Invalid input | TC06, TC07, TC23, TC28 |
+| Exception | TC09, TC11, TC16, TC22, TC30 |
+| Authorization | TC24, TC25, TC26, TC31 |
+| Business rule | TC10, TC14, TC15, TC17, TC19, TC21, TC29 |
