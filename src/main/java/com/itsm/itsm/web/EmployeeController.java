@@ -1,6 +1,7 @@
 package com.itsm.itsm.web;
 
 import com.itsm.itsm.exception.InvalidLoginException;
+import com.itsm.itsm.exception.UnauthorizedOperationException;
 import com.itsm.itsm.audit.AuditRecordRepository;
 import com.itsm.itsm.exception.DuplicateIncidentException;
 import com.itsm.itsm.model.Employee;
@@ -116,8 +117,13 @@ public class EmployeeController {
     }
 
     private Employee currentEmployee(Principal principal) {
-        return employeeRepository.findByEmail(principal.getName())
+        Employee employee = employeeRepository.findByEmail(principal.getName())
                 .orElseThrow(() -> new InvalidLoginException(principal.getName()));
+        // Deactivated while still logged in: stop them at the next click
+        if (!employee.isActive()) {
+            throw new UnauthorizedOperationException("Your account has been deactivated. Please contact the IT admin.");
+        }
+        return employee;
     }
 
     private void addDropdowns(Model model) {

@@ -2,8 +2,11 @@ package com.itsm.itsm.web;
 
 import com.itsm.itsm.assignment.AssignmentService;
 import com.itsm.itsm.exception.InvalidInputException;
+import com.itsm.itsm.model.Employee;
 import com.itsm.itsm.model.Technician;
 import com.itsm.itsm.repository.CategoryRepository;
+import com.itsm.itsm.repository.EmployeeRepository;
+import com.itsm.itsm.repository.IncidentRepository;
 import com.itsm.itsm.repository.TechnicianRepository;
 import com.itsm.itsm.repository.UserRepository;
 import com.itsm.itsm.service.AdminUserService;
@@ -28,15 +31,20 @@ public class AdminUserController {
     private final TechnicianRepository technicianRepository;
     private final CategoryRepository categoryRepository;
     private final AssignmentService assignmentService;
+    private final EmployeeRepository employeeRepository;
+    private final IncidentRepository incidentRepository;
 
     public AdminUserController(AdminUserService userService, UserRepository userRepository,
                                TechnicianRepository technicianRepository, CategoryRepository categoryRepository,
-                               AssignmentService assignmentService) {
+                               AssignmentService assignmentService, EmployeeRepository employeeRepository,
+                               IncidentRepository incidentRepository) {
         this.userService = userService;
         this.userRepository = userRepository;
         this.technicianRepository = technicianRepository;
         this.categoryRepository = categoryRepository;
         this.assignmentService = assignmentService;
+        this.employeeRepository = employeeRepository;
+        this.incidentRepository = incidentRepository;
     }
 
     @GetMapping
@@ -49,6 +57,7 @@ public class AdminUserController {
         }
         model.addAttribute("technicians", technicians);
         model.addAttribute("workload", workload);
+        model.addAttribute("employees", employeeRepository.findAll(Sort.by("name")));
         model.addAttribute("users", userRepository.findAll(Sort.by("name")));
         return "admin/users";
     }
@@ -103,5 +112,36 @@ public class AdminUserController {
             redirect.addFlashAttribute("error", e.getMessage());
             return "redirect:/admin/users/technicians/" + id;
         }
+    }
+
+    // ----- Employees -----
+
+    @GetMapping("/employees/{id}")
+    public String editEmployeeForm(@PathVariable Long id, Model model) {
+        Employee employee = userService.findEmployee(id);
+        model.addAttribute("employee", employee);
+        model.addAttribute("incidents", incidentRepository.findByReporterOrderByCreatedAtDesc(employee));
+        return "admin/edit-employee";
+    }
+
+    @PostMapping("/employees/{id}")
+    public String updateEmployee(@PathVariable Long id, @RequestParam String name, @RequestParam String department,
+                                 RedirectAttributes redirect) {
+        try {
+            Employee employee = userService.updateEmployee(id, name, department);
+            redirect.addFlashAttribute("message", employee.getName() + " updated.");
+        } catch (InvalidInputException e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/admin/users/employees/" + id;
+    }
+
+    // active=false deactivates, active=true reactivates
+    @PostMapping("/employees/{id}/active")
+    public String setEmployeeActive(@PathVariable Long id, @RequestParam boolean active, RedirectAttributes redirect) {
+        Employee employee = userService.setEmployeeActive(id, active);
+        redirect.addFlashAttribute("message", employee.getName()
+                + (active ? " can log in again." : " is deactivated and can no longer log in."));
+        return "redirect:/admin/users/employees/" + id;
     }
 }

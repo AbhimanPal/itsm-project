@@ -22,6 +22,12 @@ public class Employee extends User {
         return Role.EMPLOYEE;
     }
 
+    // The admin corrects an employee's name or department
+    public void updateDetails(String name, String department) {
+        changeName(name);
+        this.department = department;
+    }
+
     public String getDepartment() {
         return department;
     }

@@ -25,6 +25,11 @@ public abstract class User {
     @Column(nullable = false)
     private String passwordHash;
 
+    // A deactivated user can't log in any more. We never delete users, because their
+    // incidents, notes and audit records still point to them.
+    // A Boolean (not boolean) so rows saved before this column existed load as null = active.
+    private Boolean deactivated;
+
     // JPA needs an empty constructor to load rows from the database
     protected User() {
     }
@@ -37,6 +42,23 @@ public abstract class User {
 
     // Each subclass must say which role it is (polymorphism)
     public abstract Role getRole();
+
+    public boolean isActive() {
+        return !Boolean.TRUE.equals(deactivated);
+    }
+
+    public void deactivate() {
+        deactivated = true;
+    }
+
+    public void reactivate() {
+        deactivated = false;
+    }
+
+    // protected: only subclasses (e.g. Employee.updateDetails) may change the name
+    protected void changeName(String newName) {
+        name = newName;
+    }
 
     public Long getId() {
         return id;

@@ -11,6 +11,7 @@
     <p class="muted">IT Service Management &amp; Incident Resolution</p>
 
     <p class="alert error" th:if="${param.error}">Wrong email or password.</p>
+    <p class="alert error" th:if="${param.deactivated}">This account has been deactivated. Please contact the IT admin.</p>
     <p class="alert ok" th:if="${param.logout}">You have been logged out.</p>
     <p class="alert ok" th:if="${param.registered}">Account created. Please log in.</p>
 

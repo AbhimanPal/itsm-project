@@ -16,6 +16,11 @@ our code configures it in `security/SecurityConfig.java`.
   every page shows a friendly `InvalidLoginException` page with a **Log out** button
   (test: `RoleAccessTest.unknownLoggedInUserGetsFriendlyErrorPage`).
 
+- The admin can **deactivate** an employee (Users → Edit). Spring Security then refuses that
+  login (`ItsmUserDetailsService` marks the account disabled) and the login page says the account
+  is deactivated. Accounts are never deleted, so the audit trail stays complete
+  (test: `EmployeeManagementTest.deactivatedEmployeeCannotLogInUntilReactivated`).
+
 ## 2. Hashed passwords
 
 - Passwords are **never stored as plain text**. `BCryptPasswordEncoder` (in `SecurityConfig`)

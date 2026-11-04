@@ -2,7 +2,7 @@
 
 All cases below are automated JUnit 5 tests. Run them all in IntelliJ by right-clicking
 `src/test/java` → **Run 'All Tests'**, or in a terminal with `./mvnw test`.
-The project has **78 automated tests**; the 31 below are the documented cases for the report.
+The project has **82 automated tests**; the 32 below are the documented cases for the report.
 Every one passes (last run: 3 Nov 2026).
 
 Unit tests check one class on its own. Integration tests (`@SpringBootTest`) start the
@@ -42,6 +42,7 @@ MockMvc, which sends fake browser requests as a pretend logged-in user (`@WithMo
 | TC29 | Business rule | Admin raises priority | Wi-Fi incident P3 → P1 with a reason | Deadlines become created + 5 / 30 min, `PRIORITY_CHANGED` in audit, reporter notified | `PriorityChangeIntegrationTest.raisingPriorityShortensDeadlinesAndTellsEveryone` |
 | TC30 | Exception | Mail server unreachable | "Send test email" with a mail sender that fails | `NetworkFailureException` | `EmailNotificationChannelTest.gmailUnreachableGivesNetworkFailure` |
 | TC31 | Authorization | Logged in as a deleted user | Session for `ghost@itsm.local`, open `/employee/incidents` | Friendly error page (`InvalidLoginException`) with Log out | `RoleAccessTest.unknownLoggedInUserGetsFriendlyErrorPage` |
+| TC32 | Authorization | Deactivated employee logs in | Admin deactivates Asha, she logs in with the right password; then admin reactivates her | Refused with `/login?deactivated`; works again after reactivation | `EmployeeManagementTest.deactivatedEmployeeCannotLogInUntilReactivated` |
 
 ## Coverage by type
 
@@ -51,5 +52,5 @@ MockMvc, which sends fake browser requests as a pretend logged-in user (`@WithMo
 | Boundary | TC02, TC03, TC04, TC05, TC20 |
 | Invalid input | TC06, TC07, TC23, TC28 |
 | Exception | TC09, TC11, TC16, TC22, TC30 |
-| Authorization | TC24, TC25, TC26, TC31 |
+| Authorization | TC24, TC25, TC26, TC31, TC32 |
 | Business rule | TC10, TC14, TC15, TC17, TC19, TC21, TC29 |

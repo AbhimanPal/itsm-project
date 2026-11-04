@@ -2,6 +2,7 @@ package com.itsm.itsm.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,6 +27,10 @@ public class SecurityConfig {
                         .loginPage("/login")
                         .usernameParameter("email")
                         .defaultSuccessUrl("/", true)
+                        // A deactivated account gets its own message instead of "wrong password"
+                        .failureHandler((request, response, exception) -> response.sendRedirect(
+                                request.getContextPath() + (exception instanceof DisabledException
+                                        ? "/login?deactivated" : "/login?error")))
                         .permitAll())
                 .logout(logout -> logout
                         .logoutSuccessUrl("/login?logout")

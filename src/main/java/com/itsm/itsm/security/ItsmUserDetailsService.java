@@ -26,6 +26,7 @@ public class ItsmUserDetailsService implements UserDetailsService {
                 .withUsername(user.getEmail())
                 .password(user.getPasswordHash())
                 .roles(user.getRole().name())
+                .disabled(!user.isActive()) // Spring Security refuses the login of a deactivated user
                 .build();
     }
 }

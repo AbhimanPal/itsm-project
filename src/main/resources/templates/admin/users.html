@@ -32,17 +32,33 @@
         </tbody>
     </table>
 
+    <h2>Employees</h2>
+    <table>
+        <thead>
+        <tr><th>Name</th><th>Email</th><th>Department</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="e : ${employees}">
+            <td th:text="${e.name}">Asha</td>
+            <td th:text="${e.email}">asha@itsm.local</td>
+            <td th:text="${e.department}">Finance</td>
+            <td th:text="${e.active} ? 'Active' : 'Deactivated'" th:class="${e.active} ? '' : 'muted'">Active</td>
+            <td><a th:href="@{/admin/users/employees/{id}(id=${e.id})}">Edit</a></td>
+        </tr>
+        </tbody>
+    </table>
+
     <h2>All accounts</h2>
     <table>
         <thead>
-        <tr><th>Name</th><th>Email</th><th>Role</th><th>Department</th></tr>
+        <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr>
         </thead>
         <tbody>
         <tr th:each="u : ${users}">
             <td th:text="${u.name}">Asha</td>
             <td th:text="${u.email}">asha@itsm.local</td>
             <td th:text="${u.role}">EMPLOYEE</td>
-            <td th:text="${u.role.name() == 'EMPLOYEE'} ? ${u.department} : ''">Finance</td>
+            <td th:text="${u.active} ? 'Active' : 'Deactivated'">Active</td>
         </tr>
         </tbody>
     </table>

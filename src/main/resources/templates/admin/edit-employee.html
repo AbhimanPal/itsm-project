@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit employee · I-ITSM</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="role-admin">
+<header th:replace="~{fragments/nav :: nav('admin')}"></header>
+<main class="card">
+    <p><a th:href="@{/admin/users}">← Back to users</a></p>
+    <h1 th:text="${employee.name}">Asha Rao</h1>
+    <p class="muted" th:text="${employee.email} + ' · ' + (${employee.active} ? 'Active' : 'Deactivated')">email · Active</p>
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <form th:action="@{/admin/users/employees/{id}(id=${employee.id})}" method="post">
+        <label>Name
+            <input type="text" name="name" required maxlength="100" th:value="${employee.name}">
+        </label>
+        <label>Department
+            <input type="text" name="department" required maxlength="100" th:value="${employee.department}">
+        </label>
+        <button class="primary" type="submit">Save changes</button>
+    </form>
+
+    <h2>Account</h2>
+    <!-- Users are deactivated, never deleted, so their incidents and audit history stay complete -->
+    <form th:action="@{/admin/users/employees/{id}/active(id=${employee.id})}" method="post">
+        <input type="hidden" name="active" th:value="${!employee.active}">
+        <p class="muted" th:text="${employee.active}
+                ? 'A deactivated employee can no longer log in. Their incidents stay in the system.'
+                : 'This employee cannot log in at the moment.'">text</p>
+        <button type="submit" th:text="${employee.active} ? 'Deactivate account' : 'Reactivate account'">Deactivate</button>
+    </form>
+
+    <h2>Incidents reported</h2>
+    <p class="muted" th:if="${incidents.isEmpty()}">None yet.</p>
+    <ul>
+        <li th:each="i : ${incidents}">
+            <a th:href="@{/admin/incidents/{id}(id=${i.id})}" th:text="${i.number}">INC0001</a>
+            <span th:text="'· ' + ${i.title} + ' · ' + ${i.priority} + ' · ' + ${i.status}">details</span>
+        </li>
+    </ul>
+</main>
+</body>
+</html>
